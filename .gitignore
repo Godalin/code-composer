@@ -1,0 +1,62 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Generated audio/music files
+*.mid
+*.wav
+*.mp3
+*.alda
+
+# Output directory (except keeping examples for reference)
+output/
+
+# UV and environment management
+.uv/
+.python-version
+
+# direnv
+.direnv/
+
+# Project-specific
+*.swp
+.vscode/launch.json
+

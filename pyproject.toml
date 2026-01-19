@@ -1,0 +1,21 @@
+[project]
+name = "code-composer"
+version = "0.1.0"
+description = "Convert source code into music - A code-to-music compiler system"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pycparser>=2.21"]
+authors = [{ name = "godalin" }]
+
+[project.urls]
+Repository = "https://github.com/godalin/music"
+
+[tool.uv]
+managed = true
+
+[dependency-groups]
+dev = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
