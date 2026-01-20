@@ -19,16 +19,16 @@ def create_parser():
         epilog='''
 示例：
   # 从文件读取 C 代码并转换为 MP3
-  code-composer -f code.c -o music.mp3
+  uv run python -m code_composer -f code.c -o music.mp3
   
   # 从命令行传入 Python 代码
-  code-composer -c "x = 42; y = x + 1" --lang python -o output.mp3
+  uv run python -m code_composer -c "x = 42; y = x + 1" --lang python -o output.mp3
   
   # 生成所有格式（Alda、MIDI、MP3）
-  code-composer -f code.c --export-all -o music
+  uv run python -m code_composer -f code.c --export-all -o music
   
   # 使用自定义和声进行和速度
-  code-composer -f code.c -o music.mp3 --chord IV_V_iii_vi_ii_V_I --tempo 140
+  uv run python -m code_composer -f code.c -o music.mp3 --chord IV_V_iii_vi_ii_V_I --tempo 140
         '''
     )
     

@@ -89,6 +89,7 @@ alda_score, metadata = generate_piano_composition(
 ```
 
 运行：
+
 ```bash
 uv run python script.py
 ```
@@ -102,18 +103,21 @@ uv run python script.py
 #### 1. Default 风格（默认）
 
 **特点：**
+
 - 平衡的现代音乐
 - 16分音符较多（节奏复杂）
 - 较少三连音（均分节奏）
 - 适合动态、活泼的音乐
 
 **节奏分布：**
+
 - 8分音符：43%
 - 4分音符：33%
 - 16分音符：22%
 - 三连音（合计）：22%
 
 **使用命令：**
+
 ```bash
 uv run python -m code_composer -f code.c --style default
 ```
@@ -121,6 +125,7 @@ uv run python -m code_composer -f code.c --style default
 #### 2. Jazz 风格
 
 **特点：**
+
 - Swing 节奏感（2/3 1/3 分割）
 - 大量三连音（摇摆感）
 - 蓝调音符（blue notes）：♭3, ♭5, ♭7 等
@@ -128,18 +133,21 @@ uv run python -m code_composer -f code.c --style default
 - 爵士专用和声进行
 
 **节奏分布：**
+
 - 4分音符：28%
 - 8分音符：19%
 - 三连音（合计）：32% ← 高频率！
 - 16分音符：11%
 
 **可用和声进行：**
+
 - `II_V_I` - 经典爵士进行
 - `VI_ii_V_I` - 扩展爵士进行
 - `Imaj7_vi7_ii7_V7` - 现代爵士进行
 
 **蓝调音符示例：**
-```
+
+```text
 C 大调蓝调音符：
 - d#/eb (♭3)
 - f#/gb (♭5)
@@ -147,6 +155,7 @@ C 大调蓝调音符：
 ```
 
 **使用命令：**
+
 ```bash
 # 使用 II-V-I 进行
 uv run python -m code_composer -f code.c --style jazz --chord II_V_I
@@ -161,12 +170,14 @@ uv run python -m code_composer -f code.c --style jazz --chord II_V_I --tempo 160
 ### 和声进行参考
 
 **通用进行（所有风格可用）：**
+
 - `I_vi_IV_V` - 流行进行（1-6-4-5）
 - `I_V_IV_vi` - 常见进行（1-5-4-6）
 - `IV_V_iii_vi_ii_V_I` - 帕赫贝尔卡农进行
 - `Imaj7_vi7_ii7_V7` - 爵士七和弦进行
 
 **爵士专用进行：**
+
 - `II_V_I` - 经典 Bebop
 - `VI_ii_V_I` - 扩展 Standard
 
@@ -202,17 +213,20 @@ uv run python -m code_composer [选项]
 ```
 
 **输入选项（二选一）：**
+
 ```bash
 -f FILE, --file FILE      # 从文件读取代码
 -c CODE, --code CODE      # 从命令行代码字符串
 ```
 
 **语言选项：**
+
 ```bash
 --lang {c,python}         # 明确指定语言（默认自动检测）
 ```
 
 **输出选项：**
+
 ```bash
 -o OUTPUT, --output OUTPUT  # 输出文件路径（不需要扩展名）
 --export-all                # 导出所有格式 (Alda, MIDI, MP3)
@@ -220,6 +234,7 @@ uv run python -m code_composer [选项]
 ```
 
 **音乐参数：**
+
 ```bash
 --tempo TEMPO                # 设置音乐速度（BPM，默认 120）
 --chord CHORD_PROGRESSION    # 设置和弦进行（默认 I_vi_IV_V）
@@ -229,6 +244,7 @@ uv run python -m code_composer [选项]
 ```
 
 **其他选项：**
+
 ```bash
 -v, --verbose      # 详细输出信息
 --no-play          # 生成后不自动播放（默认会播放）
@@ -238,16 +254,19 @@ uv run python -m code_composer [选项]
 ### 更多用法
 
 **指定风格和和弦：**
+
 ```bash
 uv run python -m code_composer -f code.c --style jazz --chord II_V_I --tempo 140 -o jazz_music
 ```
 
 **生成所有格式（Alda + MIDI + MP3）：**
+
 ```bash
 uv run python -m code_composer -f code.c --export-all -o complete_music
 ```
 
 **不自动播放：**
+
 ```bash
 uv run python -m code_composer -f code.c -o music --no-play
 ```
@@ -267,7 +286,7 @@ uv run python -m code_composer -f code.c -o music --no-play
 
 ### 编译流程
 
-```
+```text
 源代码 (.c / .py)
        |
        v
@@ -316,66 +335,28 @@ uv run python -m code_composer -f code.c -o music --no-play
 ### 核心组件
 
 **1. 和弦伴奏（低音声部）：**
+
 - 每个小节使用当前进行中的和弦
 - 低音区八度（octave - 1）
 - 整小节全音符（充满和声）
 - 音量 80（清晰可辨）
 
 **2. 旋律（高音声部）：**
+
 - 使用当前和弦内音生成
 - 多种节奏型（根据风格选择）
 - 动机类型（上行、下行、拱形、谷形、重复）
 - 第一音符强调（vol 95），其余正常（vol 80）
 
 **3. 声部组织：**
+
 - 使用 Alda Voices（V1 旋律，V2 和弦）
 - 两个声部完全同步演奏
 - 每个乐句 4 小节，和弦按进行循环
 
-### 编译流程
-
-```
-C 代码         Python 代码
-   |               |
-   v               v
-pycparser      tokenize
-   |               |
-   v               v
-AST 解析     Token 流
-   |               |
-   +-------+-------+
-           |
-           v
-      Token 流
-           |
-           v
-    Composer 引擎
-           |
-     (风格系统)
-           |
-   +-------+-------+
-   |               |
-   v               v
-V1: 旋律      V2: 和弦
-   |               |
-   +-------+-------+
-           |
-           v
-      Alda 乐谱
-           |
-   +-------+-------+-------+
-   |       |       |
-   v       v       v
- Alda    MIDI    MP3
-```
-
----
-
----
-
 ## 项目结构
 
-```
+```text
 code_composer/
 ├── __init__.py          # 包入口
 ├── __main__.py          # 命令行入口
