@@ -72,9 +72,13 @@ class CLexer(BaseLexer):
         
         elif isinstance(node, c_ast.Decl):
             # 声明（变量、函数等）
+            # 顺序：storage(如 static) → type(如 int) → name(如 x) → init(如 = 42)
             if node.storage:
                 for s in node.storage:
                     tokens.append(self._make_token(TokenType.KEYWORD, s))
+            
+            if node.type:
+                tokens.extend(self._extract_tokens_from_ast(node.type))
             
             if node.name:
                 tokens.append(self._make_token(TokenType.IDENTIFIER, node.name))
@@ -82,9 +86,6 @@ class CLexer(BaseLexer):
             if node.init:
                 tokens.append(self._make_token(TokenType.OPERATOR, '='))
                 tokens.extend(self._extract_tokens_from_ast(node.init))
-            
-            if node.type:
-                tokens.extend(self._extract_tokens_from_ast(node.type))
         
         elif isinstance(node, c_ast.FuncDecl):
             # 函数声明
@@ -176,9 +177,7 @@ class CLexer(BaseLexer):
                 tokens.extend(self._extract_tokens_from_ast(param))
         
         elif isinstance(node, c_ast.TypeDecl):
-            # 类型声明
-            if node.declname:
-                tokens.append(self._make_token(TokenType.IDENTIFIER, node.declname))
+            # 类型声明 - 只输出类型本身，不输出 declname（declname 在 Decl 中处理）
             if node.type:
                 tokens.extend(self._extract_tokens_from_ast(node.type))
         

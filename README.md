@@ -167,19 +167,63 @@ uv run python -m code_composer -f code.c --style jazz --chord VI_ii_V_I
 uv run python -m code_composer -f code.c --style jazz --chord II_V_I --tempo 160
 ```
 
-### 和声进行参考
+### 音阶与和声进行
 
-**通用进行（所有风格可用）：**
+不同音阶有各自适合的和声进行，系统会自动根据选定的音阶推荐合适的进行。
+
+#### Major（大调）
 
 - `I_vi_IV_V` - 流行进行（1-6-4-5）
 - `I_V_IV_vi` - 常见进行（1-5-4-6）
 - `IV_V_iii_vi_ii_V_I` - 帕赫贝尔卡农进行
-- `Imaj7_vi7_ii7_V7` - 爵士七和弦进行
+- `I_IV_V_IV` - 摇滚进行
+- `vi_IV_I_V` - 抒情进行
 
-**爵士专用进行：**
+#### Minor（小调）
+
+- `i_VI_III_VII` - 自然小调进行
+- `i_iv_v_i` - 基础小调进行
+- `i_VI_VII_i` - 悲伤进行
+- `i_III_VII_VI` - 史诗进行
+- `i_iv_VII_III` - 哥特进行
+
+#### Dorian（多利亚调式）
+
+- `i_IV_i_IV` - 多利亚摇摆
+- `i_ii_IV_V` - 多利亚经典
+- `i_IV_VII_i` - 多利亚回环
+- `ii_V_i_IV` - 多利亚爵士
+
+#### Pentatonic（五声音阶）
+
+- `I_III_IV_I` - 五声简约
+- `I_II_IV_V` - 中国风
+- `I_IV_V_I` - 民谣进行
+
+#### Gypsy Minor（吉普赛小调/匈牙利小调）
+
+- `i_II_V_i` - 吉普赛基础
+- `i_VII_VI_VII` - 吉普赛回旋
+- `i_II_III_i` - 匈牙利式
+- `VI_VII_i_II` - 东欧风情
+
+#### Gypsy Major（吉普赛大调/双和声大调）
+
+- `I_II_III_I` - 双和声行进
+- `I_bII_VII_I` - 中东风格
+- `I_V_VI_VII` - 神秘进行
+
+#### Jazz 专用进行（适用于多种音阶）
 
 - `II_V_I` - 经典 Bebop
 - `VI_ii_V_I` - 扩展 Standard
+- `Imaj7_vi7_ii7_V7` - 现代爵士
+- `ii7_V7_Imaj7_vi7` - 转位爵士
+
+**使用说明：**
+
+- 不指定 `--chord` 时，系统会自动选择该音阶的推荐进行
+- 指定的进行如果不适合当前音阶，系统会自动切换到推荐进行并提示
 
 ---
 
@@ -200,8 +244,11 @@ uv run python -m code_composer -f code.py -o music.mp3
 # 生成但不播放
 uv run python -m code_composer -f code.c -o music.mp3 --no-play
 
-# 快速试听后不保存
-uv run python -m code_composer -c "int x = 42;"
+# 使用不同音阶（自动选择推荐和声进行）
+uv run python -m code_composer -c "int x = 42;" --key D --scale minor
+
+# 指定音阶和和声进行
+uv run python -m code_composer -f code.c --key G --scale dorian --chord i_IV_i_IV -o output
 ```
 
 ### 完整命令选项
@@ -237,8 +284,10 @@ uv run python -m code_composer [选项]
 
 ```bash
 --tempo TEMPO                # 设置音乐速度（BPM，默认 120）
---chord CHORD_PROGRESSION    # 设置和弦进行（默认 I_vi_IV_V）
+--chord CHORD_PROGRESSION    # 和声进行（可选，不指定则自动根据音阶选择）
 --style {default,jazz}       # 选择音乐风格（默认 default）
+--key KEY                    # 乐曲调（如 C, G, D#, Bb；默认 C）
+--scale {major,minor,dorian,pentatonic,gypsy_minor,gypsy_major}  # 音阶/调式（默认 major）
 --bars-per-phrase BARS       # 设置短语长度（默认 4 小节）
 --bass-arpeggio {block,double,follow,arpeggio,pendulum}  # 低音分解和弦模式（默认 block）
 ```
@@ -253,10 +302,10 @@ uv run python -m code_composer [选项]
 
 ### 更多用法
 
-**指定风格和和弦：**
+**指定风格、调式与和弦：**
 
 ```bash
-uv run python -m code_composer -f code.c --style jazz --chord II_V_I --tempo 140 -o jazz_music
+uv run python -m code_composer -f code.c --style jazz --key G --scale dorian --chord II_V_I --tempo 140 -o jazz_music
 ```
 
 **生成所有格式（Alda + MIDI + MP3）：**

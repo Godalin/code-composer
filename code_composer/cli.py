@@ -4,10 +4,16 @@ Code Composer 命令行工具
 """
 
 import argparse
+import os
 import sys
+import tempfile
 from pathlib import Path
 
-from .composer import compose_to_mp3, generate_piano_composition
+from .composer import compose
+from .frontend import compile_c_code
+from .styles import create_style_with_overrides
+from .exporter import export_to_midi, midi_to_mp3
+from .structures import print_composition_tree, _convert_note_to_alda
 
 
 def create_parser():
@@ -33,7 +39,7 @@ def create_parser():
     )
     
     # 输入参数
-    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument(
         '-f', '--file',
         type=str,
@@ -52,6 +58,27 @@ def create_parser():
         choices=['c', 'python', 'auto'],
         default='auto',
         help='源代码语言（默认自动判断）'
+    )
+
+    # 新增：音乐调与音阶
+    parser.add_argument(
+        '--key',
+        type=str,
+        default=None,
+        help='乐曲调（如 C, G, D#, Bb，默认使用风格的默认值）'
+    )
+    parser.add_argument(
+        '--scale',
+        type=str,
+        choices=['major', 'minor', 'dorian', 'pentatonic', 'gypsy_minor', 'gypsy_major'],
+        default=None,
+        help='音阶/调式（默认使用风格的默认值）'
+    )
+    
+    parser.add_argument(
+        '--test-scale',
+        action='store_true',
+        help='测试模式：只播放当前音阶（覆盖2个八度），不生成旋律'
     )
     
     # 输出参数
@@ -80,24 +107,31 @@ def create_parser():
     parser.add_argument(
         '--chord',
         type=str,
-        choices=['I_vi_IV_V', 'I_V_IV_vi', 'IV_V_iii_vi_ii_V_I', 'Imaj7_vi7_ii7_V7', 'II_V_I', 'VI_ii_V_I'],
-        default='I_vi_IV_V',
-        help='和声进行（默认：I_vi_IV_V）'
+        default=None,  # 改为 None，在运行时根据音阶自动选择
+        help='和声进行（不指定则根据音阶自动选择推荐进行）'
     )
     
     parser.add_argument(
         '--style',
         type=str,
-        choices=['default', 'jazz'],
+        choices=['default', 'jazz', 'waltz', 'minuet', 'chinese'],
         default='default',
-        help='音乐风格（默认：default）'
+        help='音乐风格（默认：default，waltz(3/4)、minuet(6/8 小步舞曲)、chinese(五声五阶)）'
     )
     
     parser.add_argument(
         '--tempo',
         type=int,
-        default=120,
-        help='乐曲速度 BPM（默认：120）'
+        default=None,
+        help='乐曲速度 BPM（默认：120，waltz/minuet 为 160）'
+    )
+    
+    parser.add_argument(
+        '--bass-pattern',
+        type=str,
+        choices=['block', 'double', 'arpeggio', 'pendulum', 'waltz_oom_pah', 'minuet_duple'],
+        default=None,
+        help='低音模式（默认使用风格的低音模式）'
     )
     
     parser.add_argument(
@@ -106,20 +140,28 @@ def create_parser():
         default=4,
         help='每个乐句的小节数（默认：4）'
     )
-    
+
     parser.add_argument(
-        '--bass-arpeggio',
-        type=str,
-        choices=['block', 'double', 'follow', 'arpeggio', 'pendulum'],
-        default='block',
-        help='低音分解和弦模式（默认：block）'
+        '--bars-per-token',
+        type=int,
+        choices=[1, 2],
+        default=1,
+        help='一个 token 覆盖的小节数（1 或 2，默认 1）'
     )
     
     parser.add_argument(
         '--seed',
         type=int,
-        default=None,
-        help='随机数种子（用于复现结果）'
+        default=42,
+        help='随机数种子（默认：42，用于复现结果）'
+    )
+    
+    parser.add_argument(
+        '--parts',
+        type=str,
+        choices=['melody', 'accompaniment', 'both'],
+        default='both',
+        help='输出部分：melody（仅旋律 V1）、accompaniment（仅伴奏 V2）、both（两者，默认）'
     )
     
     # 其他选项
@@ -127,6 +169,13 @@ def create_parser():
         '-v', '--verbose',
         action='store_true',
         help='显示详细输出信息'
+    )
+
+    # 调试选项：打印作品树形信息
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='生成后打印作品的树形结构信息'
     )
     
     parser.add_argument(
@@ -236,26 +285,126 @@ def determine_output_path(output: str, format_type: str) -> str:
 
 def main():
     """主命令行入口"""
-    import tempfile
-    import os
     import shutil
+    from .theory import get_available_progressions, get_default_progression
+    from .styles import get_style
     
     parser = create_parser()
     args = parser.parse_args()
     
+    # 验证：非测试模式下必须提供输入源代码
+    if not args.test_scale and not args.file and not args.code:
+        parser.error("需要提供 -f/--file 或 -c/--code 参数，除非使用 --test-scale 模式")
+    
+    # 从风格获取默认值，用户指定的参数覆盖
+    style_obj = get_style(args.style)
+    if style_obj is None:
+        print(f"❌ 错误: 未知的风格: {args.style}", file=sys.stderr)
+        sys.exit(1)
+    
+    # 应用默认值（如果用户未指定）
+    if args.key is None:
+        args.key = style_obj.default_key
+    if args.scale is None:
+        args.scale = style_obj.default_scale
+    if args.tempo is None:
+        args.tempo = style_obj.default_tempo
+    if args.chord is None:
+        args.chord = get_default_progression(args.scale, args.style)
+    
+    if args.verbose:
+        print(f"🎵 使用风格: {args.style}")
+        print(f"   调性: {args.key}, 音阶: {args.scale}, 速度: {args.tempo} BPM")
+        available = get_available_progressions(args.scale, args.style)
+        print(f"   和声进行: {args.chord} ({available[args.chord]})")
+    
     # 初始化临时文件变量
     use_temp_file = False
     temp_dir = None
-    
-    # 如果没有指定输出文件，使用临时文件
+    original_output = args.output  # 保存原始输出路径
+
+    # 如果没有指定输出文件
     if args.output is None:
+        # 用户显式要求不播放但也不输出文件，直接报错
+        if args.no_play:
+            print("❌ 错误: 使用 --no-play 时必须通过 -o 指定输出文件。", file=sys.stderr)
+            sys.exit(1)
+
+        # 未禁用播放则使用临时目录输出并自动播放
         use_temp_file = True
-        # 创建临时目录和文件
         temp_dir = tempfile.mkdtemp(prefix='code_composer_')
         args.output = os.path.join(temp_dir, 'temp_music')
-        args.no_play = False  # 确保会播放
     
     try:
+        # 处理音阶测试模式
+        if args.test_scale:
+            if args.verbose:
+                print(f"🎵 音阶测试模式")
+                print(f"   调性: {args.key}, 音阶: {args.scale}")
+            
+            from .theory import get_scale
+            
+            # 获取音阶音符
+            scale_notes = get_scale(args.key, args.scale)
+            # 去掉最后重复的主音
+            if scale_notes[-1] == scale_notes[0]:
+                scale_notes = scale_notes[:-1]
+            
+            # 生成上行序列：o4 g a b → o5 d e g a b → o6 d
+            ascend = [
+                (scale_notes[0], 4),  # g
+                (scale_notes[1], 4),  # a
+                (scale_notes[2], 4),  # b
+                (scale_notes[3], 5),  # d
+                (scale_notes[4], 5),  # e
+                (scale_notes[0], 5),  # g
+                (scale_notes[1], 5),  # a
+                (scale_notes[2], 5),  # b
+                (scale_notes[3], 6),  # d (顶点)
+            ]
+
+            # 下行序列：镜像上行（不重复顶点）
+            descend = list(reversed(ascend[:-1]))
+
+            # 合并并转换为 Alda 片段（仅在八度变化时标记 oN）
+            full_seq = ascend + descend
+            notes = []
+            current_oct = None
+            for note_name, octv in full_seq:
+                if octv != current_oct:
+                    notes.append(f"o{octv}")
+                    current_oct = octv
+                notes.append(f"{_convert_note_to_alda(note_name)}2")
+
+            # 最后回到起点（全音符强调结束）
+            notes.append(f"{_convert_note_to_alda(scale_notes[0])}1")
+            
+            alda_code = f'piano: (tempo {args.tempo}) {" ".join(notes)}'
+            
+            # 如果用户指定了输出文件，保存
+            if original_output:
+                alda_file = determine_output_path(original_output, 'alda')
+                with open(alda_file, 'w') as f:
+                    f.write(alda_code)
+                print(f"✓ 音阶已保存到: {alda_file}")
+            elif args.verbose:
+                print(f"✓ 音阶代码已生成")
+            
+            # 直接播放
+            if not args.no_play:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.alda', delete=False) as f:
+                    f.write(alda_code)
+                    temp_alda = f.name
+                
+                try:
+                    from .exporter import play_alda_file
+                    play_alda_file(temp_alda)
+                finally:
+                    if os.path.exists(temp_alda):
+                        os.remove(temp_alda)
+            
+            return
+        
         # 读取源代码
         if args.file:
             if args.verbose:
@@ -287,26 +436,46 @@ def main():
             midi_file = determine_output_path(base_output, 'midi')
             mp3_file = determine_output_path(base_output, 'mp3')
             
-            alda_score, metadata = generate_piano_composition(
-                source,
-                chord_progression=args.chord,
+            # 编译源码并构造 Style
+            tokens = compile_c_code(source)
+            style_obj = create_style_with_overrides(
+                args.style,
+                key=args.key,
+                scale=args.scale,
                 tempo=args.tempo,
-                bars_per_phrase=args.bars_per_phrase,
-                bass_arpeggio=args.bass_arpeggio,
-                output_file=alda_file,
-                export_midi=True,
-                midi_file=midi_file,
-                export_mp3=True,
-                mp3_file=mp3_file,
-                style=args.style,
-                seed=args.seed
+                octave=None,
+                chord_progression=args.chord,
+                bass_pattern=args.bass_pattern,
             )
+            alda_score, metadata, comp = compose(
+                style=style_obj,
+                tokens=tokens,
+                seed=args.seed,
+                parts=args.parts,
+            )
+            
+            # 保存 Alda 文件
+            with open(alda_file, 'w') as f:
+                f.write(alda_score)
+            print(f"✓ 钢琴曲已保存到: {alda_file}")
+            
+            # 导出 MIDI
+            export_to_midi(alda_file, midi_file)
+            
+            # 导出 MP3
+            midi_to_mp3(midi_file, mp3_file)
             
             print(f"✓ 生成成功!")
             print(f"  • Alda:  {alda_file}")
             print(f"  • MIDI:  {midi_file}")
             print(f"  • MP3:   {mp3_file}")
             print(f"  • 小节数: {metadata['bars']}")
+
+            # 调试输出：作品树形结构
+            if args.debug:
+                print("\n[DEBUG] 作品树形结构:")
+                print("-" * 80)
+                print(print_composition_tree(comp))
             
             # 自动播放 Alda
             if not args.no_play:
@@ -321,31 +490,51 @@ def main():
             if args.verbose:
                 print(f"\n🎼 生成 {args.format.upper()} 格式...")
             
-            # 生成 Alda 文件和其他格式
-            alda_score, metadata = generate_piano_composition(
-                source,
-                chord_progression=args.chord,
+            # 编译源码并构造 Style
+            tokens = compile_c_code(source)
+            style_obj = create_style_with_overrides(
+                args.style,
+                key=args.key,
+                scale=args.scale,
                 tempo=args.tempo,
-                bars_per_phrase=args.bars_per_phrase,
-                bass_arpeggio=args.bass_arpeggio,
-                output_file=alda_file,
-                export_midi=(args.format in ['midi', 'mp3']),
-                midi_file=output_file if args.format == 'midi' else None,
-                export_mp3=(args.format == 'mp3'),
-                mp3_file=output_file if args.format == 'mp3' else None,
-                style=args.style,
-                seed=args.seed
+                octave=None,
+                chord_progression=args.chord,
+                bass_pattern=args.bass_pattern,
             )
-            success = True
+            alda_score, metadata, comp = compose(
+                style=style_obj,
+                tokens=tokens,
+                seed=args.seed,
+                parts=args.parts,
+            )
             
-            if success:
-                print(f"✓ 生成成功!")
-                print(f"  📁 输出文件: {output_file}")
-                
-                # 自动播放（总是播放 Alda 文件）
-                if not args.no_play:
-                    print()
-                    play_audio(alda_file, verbose=args.verbose)
+            # 保存 Alda 文件
+            with open(alda_file, 'w') as f:
+                f.write(alda_score)
+            
+            # 根据格式要求进行导出
+            if args.format == 'alda':
+                output_file = alda_file
+            elif args.format == 'midi':
+                export_to_midi(alda_file, output_file)
+            elif args.format == 'mp3':
+                midi_file = output_file.replace('.mp3', '.mid')
+                export_to_midi(alda_file, midi_file)
+                midi_to_mp3(midi_file, output_file)
+            
+            print(f"✓ 生成成功!")
+            print(f"  📁 输出文件: {output_file}")
+
+            # 调试输出：作品树形结构
+            if args.debug:
+                print("\n[DEBUG] 作品树形结构:")
+                print("-" * 80)
+                print(print_composition_tree(comp))
+            
+            # 自动播放（总是播放 Alda 文件）
+            if not args.no_play:
+                print()
+                play_audio(alda_file, verbose=args.verbose)
     
     except FileNotFoundError as e:
         print(f"❌ 错误: {e}", file=sys.stderr)

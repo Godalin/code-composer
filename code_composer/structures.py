@@ -1,0 +1,331 @@
+"""
+音乐数据结构：用于组织和追踪乐曲的生成过程
+
+设计思想：
+- Bar（小节）：最小音乐单位，包含旋律和伴奏
+- ChordSpan（和声跨度）：一个 token 对应 1-2 个小节
+- Phrase（乐句）：一个完整的和声进行（和弦数是 4 的倍数）
+- Composition（作品）：完整的音乐
+
+这种结构清晰追踪 token → 和声 → 小节 的对应关系
+"""
+
+from dataclasses import dataclass, field
+from typing import List, Optional, Any
+from fractions import Fraction
+
+from .durations import sum_note_groups_beats
+
+
+def _convert_note_to_alda(note_name: str) -> str:
+    """将音符名称转换为 Alda 格式（# → +，b → -）"""
+    if note_name == 'b':
+        return 'b'  # B 音不变
+    # 将 # 替换为 +
+    result = note_name.replace('#', '+')
+    # 将降号 b 替换为 -（但不影响单独的 b 音）
+    # 例如：'db' -> 'd-', 'bb' -> 'b-'
+    if len(result) > 1 and result.endswith('b'):
+        result = result[:-1] + '-'
+    return result
+
+
+@dataclass(frozen=True)
+class Note:
+    """音符：包含音高（音名+八度）、力度（音量）和时值"""
+    name: str       # 音名，如 'c', 'd#', 'r'(休止符)
+    octave: Optional[int]  # 八度，休止符可为 None
+    velocity: int   # 力度（音量），如 75/80/85/95
+    duration: str   # 时值字符串，如 '4','8','16','6' 等
+
+
+def note_groups_to_alda(groups: List[List["Note"]]) -> str:
+    """将并行音符组序列渲染为 Alda 格式文本（多个同时音符用 / 连接为和弦）
+    
+    用于旋律和伴奏的通用渲染函数。
+    """
+    parts: List[str] = []
+    current_octave: Optional[int] = None
+    for group in groups:
+        group_parts: List[str] = []
+        for n in group:
+            if n.name == 'r':
+                group_parts.append(f"r{n.duration}")
+                continue
+            if n.octave is not None and n.octave != current_octave:
+                group_parts.append(f"o{n.octave}")
+                current_octave = n.octave
+            alda_note = _convert_note_to_alda(n.name)
+            group_parts.append(f"(vol {n.velocity}) {alda_note}{n.duration}")
+        # 多个音符用 / 连接为和弦，每个音符单独带时值
+        if len(group) > 1:
+            chord_notes: List[str] = []
+            temp_octave: Optional[int] = None
+            chord_velocity: Optional[int] = None
+            for n in group:
+                if n.name == 'r':
+                    chord_notes.append(f"r{n.duration}")
+                    continue
+                note_parts: List[str] = []
+                if n.octave is not None and n.octave != temp_octave:
+                    note_parts.append(f"o{n.octave}")
+                    temp_octave = n.octave
+                alda_note = _convert_note_to_alda(n.name)
+                note_parts.append(f"{alda_note}{n.duration}")
+                chord_notes.append(" ".join(note_parts) if note_parts and note_parts[0].startswith('o') else "".join(note_parts))
+                if chord_velocity is None:
+                    chord_velocity = n.velocity
+            # 只在和弦前设置一次力度
+            vel_prefix = f"(vol {chord_velocity}) " if chord_velocity is not None else ""
+            parts.append(f"{vel_prefix}{'/'.join(chord_notes)}")
+            if temp_octave is not None:
+                current_octave = temp_octave
+        else:
+            parts.append(" ".join(group_parts))
+    return " ".join(parts)
+
+
+def note_groups_to_alda_debug(groups: List[List["Note"]]) -> str:
+    """Debug 输出用：不含力度的音符组渲染，多个同时音符用 [] 括起
+    
+    用于树形输出展示，隐藏力度信息以提高可读性。
+    """
+    parts: List[str] = []
+    current_octave: Optional[int] = None
+    for group in groups:
+        group_parts: List[str] = []
+        for n in group:
+            if n.name == 'r':
+                group_parts.append(f"r{n.duration}")
+                continue
+            if n.octave is not None and n.octave != current_octave:
+                group_parts.append(f"o{n.octave}")
+                current_octave = n.octave
+            alda_note = _convert_note_to_alda(n.name)
+            group_parts.append(f"{alda_note}{n.duration}")
+        # 只有多个音符时才用 []
+        group_str = " ".join(group_parts)
+        if len(group) > 1:
+            parts.append(f"[{group_str}]")
+        else:
+            parts.append(group_str)
+    return " ".join(parts)
+
+
+@dataclass(frozen=True)
+class Bar:
+    """小节：音乐的最小单位"""
+    bar_num: int  # 全局小节编号（从 1 开始）
+    phrase_idx: int  # 所属乐句的索引
+    chord_idx: int  # 在乐句内的和声索引（0-based）
+    chord_name: str  # 和弦名称（如 'C', 'Am'）
+    chord_notes: List[str]  # 当前和弦的内音（如 ['c', 'e', 'g']）
+    melody: List[List[Note]]  # 旋律：并行音符组的序列（支持双音等多声部）
+    bass: List[List[Note]]  # 伴奏：并行音符组的序列（每组同时发声）
+
+    def to_alda(self) -> str:
+        """生成该小节的 Alda 代码"""
+        return f"V1: {note_groups_to_alda(self.melody)}\nV2: {note_groups_to_alda(self.bass)}"
+
+
+@dataclass(frozen=True)
+class ChordSpan:
+    """和声跨度：一个 token 对应的和声及其小节"""
+    token_idx: int  # Token 的索引（全局）
+    chord_name: str  # 和弦名称
+    chord_notes: List[str]  # 内音列表
+    bars: List[Bar] = field(default_factory=list)  # 1-2 个小节
+
+    @property
+    def num_bars(self) -> int:
+        """该和声跨越的小节数"""
+        return len(self.bars)
+
+    def __repr__(self) -> str:
+        bars_info = ", ".join(f"Bar{b.bar_num}" for b in self.bars)
+        return f"Token{self.token_idx}({self.chord_name}) → [{bars_info}]"
+
+
+@dataclass(frozen=True)
+class Phrase:
+    """乐句：一个完整的和声进行（弦数是 4 的倍数）"""
+    phrase_idx: int  # 乐句索引（从 0 开始）
+    chord_spans: List[ChordSpan] = field(default_factory=list)  # 和声序列
+
+    @property
+    def num_chords(self) -> int:
+        """乐句包含的和声数"""
+        return len(self.chord_spans)
+
+    @property
+    def num_bars(self) -> int:
+        """乐句包含的小节数"""
+        return sum(span.num_bars for span in self.chord_spans)
+
+    def __repr__(self) -> str:
+        return f"Phrase{self.phrase_idx}({self.num_chords} chords, {self.num_bars} bars)"
+
+
+@dataclass(frozen=True)
+class Composition:
+    """完整作品：包含所有乐句、小节和元数据"""
+    tempo: int
+    style: str
+    key: str
+    scale: str
+    phrases: List[Phrase] = field(default_factory=list)
+    metadata: dict = field(default_factory=dict)
+    tokens: List[Any] = field(default_factory=list)  # 原始 token 列表
+
+    @property
+    def num_phrases(self) -> int:
+        """作品包含的乐句数"""
+        return len(self.phrases)
+
+    @property
+    def num_bars(self) -> int:
+        """作品包含的小节总数"""
+        return sum(phrase.num_bars for phrase in self.phrases)
+
+    @property
+    def num_tokens(self) -> int:
+        """作品对应的 token 总数"""
+        # 优先使用原始 token 列表的长度；否则退回按 span 数量统计
+        if self.tokens:
+            return len(self.tokens)
+
+        count = 0
+        for phrase in self.phrases:
+            count += len(phrase.chord_spans)
+        return count
+
+    def get_all_bars(self) -> List[Bar]:
+        """获取所有小节的列表（按顺序）"""
+        bars = []
+        for phrase in self.phrases:
+            for span in phrase.chord_spans:
+                bars.extend(span.bars)
+        return bars
+
+    def debug_summary(self) -> str:
+        """生成调试摘要"""
+        lines = [
+            "=" * 110,
+            "🎼 作品结构调试信息",
+            "=" * 110,
+            f"风格: {self.style} | 调性: {self.key} {self.scale} | 速度: {self.tempo} BPM",
+            f"总计: {self.num_phrases} 乐句，{self.num_bars} 小节，{self.num_tokens} token",
+            "",
+        ]
+
+        for phrase in self.phrases:
+            lines.append(f"┌─ {phrase}")
+            for span in phrase.chord_spans:
+                if span.token_idx < 0:
+                    token_info = "PAD"
+                elif span.token_idx >= len(self.tokens):
+                    token_info = f"#{span.token_idx}:<out-of-range>"
+                else:
+                    tok = self.tokens[span.token_idx]
+                    token_info = f"#{span.token_idx}:{tok.type.name}({repr(tok.value)[:12]})"
+
+                chord_str = f"{span.chord_name} {span.chord_notes}"
+                bars_str = " → ".join(f"Bar{bar.bar_num}" for bar in span.bars)
+                lines.append(f"│  • {chord_str:20} | {bars_str} | {token_info}")
+            lines.append("└─")
+            lines.append("")
+
+        all_bars = self.get_all_bars()
+        if all_bars:
+            lines.append("📊 小节映射表")
+            lines.append("-" * 110)
+            # 使用制表符改善对齐显示
+            lines.append(
+                f"{'Bar':^6}\t| {'Phrase':^8}\t| {'Chord':^10}\t| {'Notes':^15}\t| "
+                f"{'Melody':^8}\t| {'Bass':^8}\t| {'Token':^30}"
+            )
+            lines.append("-" * 110)
+            for bar in all_bars:
+                melody_rendered = note_groups_to_alda(bar.melody)
+                melody_len = len(melody_rendered)
+                bass_rendered = note_groups_to_alda(bar.bass)
+                bass_len = len(bass_rendered)
+                
+                # 找到对应的 token 信息
+                token_info = "---"
+                for phrase in self.phrases:
+                    for span in phrase.chord_spans:
+                        if bar in span.bars and span.token_idx >= 0:
+                            if span.token_idx < len(self.tokens):
+                                token_obj = self.tokens[span.token_idx]
+                                token_info = f"{token_obj.type.name}('{repr(token_obj.value)[:15]}')"
+                            break
+                
+                lines.append(
+                    f"{bar.bar_num:^6}\t| "
+                    f"P{bar.phrase_idx:^6}\t| "
+                    f"{bar.chord_name:^10}\t| "
+                    f"{str(bar.chord_notes):^15}\t| "
+                    f"{melody_len:^8}\t| "
+                    f"{bass_len:^8}\t| "
+                    f"{token_info:^30}"
+                )
+            lines.append("-" * 110)
+
+        lines.append("=" * 110)
+        return "\n".join(lines)
+
+
+def print_composition_tree(comp: Composition) -> str:
+    """使用树形格式打印 Composition 的层次结构"""
+    lines = []
+    
+    # 标题
+    lines.append(f"🎼 {comp.style.upper()} Piano Composition")
+    lines.append(f"   Key: {comp.key} | Scale: {comp.scale} | Tempo: {comp.tempo} BPM")
+    lines.append(f"   Total: {comp.num_phrases} phrases, {comp.num_bars} bars, {comp.num_tokens} tokens")
+    lines.append("")
+    
+    # 遍历每个乐句（用空格缩进表示层级，不使用树形符号）
+    for phrase in comp.phrases:
+        lines.append(
+            f"Phrase {phrase.phrase_idx} "
+            f"({phrase.num_bars} bar{'s' if phrase.num_bars != 1 else ''}, "
+            f"{len(phrase.chord_spans)} chord{'s' if len(phrase.chord_spans) != 1 else ''})"
+        )
+        
+        # 遍历该乐句中的和声跨度
+        for span in phrase.chord_spans:
+            # 构建 token 信息
+            if span.token_idx < 0:
+                token_info = " ← PAD"
+            elif span.token_idx < len(comp.tokens):
+                token_obj = comp.tokens[span.token_idx]
+                token_info = f" ← Token#{span.token_idx}:{token_obj.type.name}"
+            else:
+                token_info = f" ← Token#{span.token_idx}:UNKNOWN"
+
+            chord_str = ", ".join(span.chord_notes)
+            lines.append(f"  {span.chord_name} ({chord_str}){token_info}")
+
+            # 遍历该和声的小节
+            for bar in span.bars:
+                bar_info = (
+                    f"Bar {bar.bar_num}: "
+                    f"V1: {note_groups_to_alda_debug(bar.melody)} | "
+                    f"V2: {note_groups_to_alda_debug(bar.bass)}"
+                )
+
+                melody_beats = sum_note_groups_beats(bar.melody)
+                bass_beats = sum_note_groups_beats(bar.bass)
+                beats_info = (
+                    f"      beats -> V1: {melody_beats} | "
+                    f"V2: {bass_beats}"
+                )
+
+                lines.append(f"    {bar_info}")
+                lines.append(beats_info)
+        
+        lines.append("")
+    
+    return "\n".join(lines)
