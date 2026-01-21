@@ -30,27 +30,6 @@ def _convert_note_to_alda(note_name: str) -> str:
     return result
 
 
-# 不规则连音到标准 Alda 时值的映射
-# Alda 只支持 1, 2, 4, 8, 16, 32 和附点
-_IRREGULAR_TO_ALDA = {
-    '5': '8',    # 五连音 (4/5拍) ≈ 八分音符 (1/2拍)
-    '7': '8',    # 七连音 (4/7拍) ≈ 八分音符 (1/2拍)
-    '9': '16',   # 九连音 (4/9拍) ≈ 十六分音符 (1/4拍)
-    '10': '16',  # 十连音 (2/5拍) ≈ 十六分音符 (1/4拍)
-    '11': '16',  # 十一连音 (4/11拍) ≈ 十六分音符 (1/4拍)
-}
-
-
-def _convert_duration_to_alda(duration: str) -> str:
-    """将时值转换为 Alda 支持的格式"""
-    # 处理休止符时值（如 'r8'）
-    if duration.startswith('r'):
-        rest_dur = duration[1:]
-        return 'r' + _IRREGULAR_TO_ALDA.get(rest_dur, rest_dur)
-    # 处理普通时值
-    return _IRREGULAR_TO_ALDA.get(duration, duration)
-
-
 @dataclass(frozen=True)
 class Note:
     """音符：包含音高（音名+八度）、力度（音量）和时值"""
@@ -70,7 +49,7 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
     for group in groups:
         group_parts: List[str] = []
         for n in group:
-            alda_dur = _convert_duration_to_alda(n.duration)
+            alda_dur = n.duration
             if n.name == 'r':
                 group_parts.append(f"r{alda_dur}")
                 continue
@@ -85,7 +64,7 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
             temp_octave: Optional[int] = None
             chord_velocity: Optional[int] = None
             for n in group:
-                alda_dur = _convert_duration_to_alda(n.duration)
+                alda_dur = n.duration
                 if n.name == 'r':
                     chord_notes.append(f"r{alda_dur}")
                     continue
