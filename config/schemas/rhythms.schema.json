@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://code-composer/schemas/rhythms.schema.json",
+  "title": "节奏型配置",
+  "description": "节奏型库配置文件的 JSON Schema",
+  "type": "object",
+  "required": ["patterns"],
+  "properties": {
+    "patterns": {
+      "type": "object",
+      "description": "节奏型定义集合",
+      "additionalProperties": {
+        "$ref": "#/definitions/RhythmPattern"
+      }
+    }
+  },
+  "definitions": {
+    "RhythmPattern": {
+      "type": "object",
+      "description": "单个节奏型定义",
+      "required": ["durations", "accents"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "节奏型名称"
+        },
+        "durations": {
+          "type": "array",
+          "description": "时值列表 (1=全, 2=二分, 4=四分, 8=八分, 16=十六分, 6=三连音四分, 12=三连音八分, 5/7/9/10/11=不规则连音)",
+          "items": {
+            "type": "string",
+            "enum": ["1", "2", "4", "8", "16", "32", "6", "12", "5", "7", "9", "10", "11"]
+          },
+          "minItems": 1
+        },
+        "accents": {
+          "type": "array",
+          "description": "强弱列表 (0=弱, 1=次强, 2=强, 3=重音)",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+# 中国风格配置
+
+name: chinese
+display_name: "中国风"
+description: "使用五声音阶的中国传统音乐风格"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: arpeggio
+blue_notes: false
+
+# 默认值
+defaults:
+  key: C
+  scale: pentatonic_major
+  tempo: 120
+  octave: 4
+  progression: 1-2-4-5
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/pentatonic.yml
+
+# 节奏权重（温婉大气，长音符为主）
+rhythm_weights:
+  - { pattern: whole, weight: 3 }
+  - { pattern: two_half, weight: 4 }
+  - { pattern: 4_2_4, weight: 3 }
+  - { pattern: even_4, weight: 2 }
+  - { pattern: half_2, weight: 1 }
+  - { pattern: 4_8_8_4_4, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 2 }
+  - { pattern: 8x4_4x2, weight: 1 }
+  - { pattern: synco_8_4_8_4_4, weight: 1 }
+
+# 动机权重（强调上行和下行，减少拱形）
+motif_weights:
+  - { type: ASCENDING, weight: 50 }
+  - { type: DESCENDING, weight: 40 }
+  - { type: ARCH, weight: 0 }
+  - { type: VALLEY, weight: 0 }
+  - { type: REPEAT, weight: 5 }
+  - { type: RANDOM, weight: 5 }

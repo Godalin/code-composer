@@ -1,0 +1,40 @@
+# 小步舞曲风格配置
+
+name: minuet
+display_name: "小步舞曲"
+description: "典雅精致的巴洛克小步舞曲风格"
+
+# 基础参数
+time_signature: 3/4
+bass_pattern: minuet_duple
+blue_notes: false
+
+# 默认值
+defaults:
+  key: C
+  scale: major
+  tempo: 100
+  octave: 4
+  progression: 1-6min-4-5
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/major.yml
+  - progressions/minor.yml
+
+# 节奏权重（6/8拍子为主）
+rhythm_weights:
+  - { pattern: 8x6_beat, weight: 10 }
+  - { pattern: even_3, weight: 3 }
+  - { pattern: 4_8_8_4, weight: 1 }
+  - { pattern: 8_8_4_4, weight: 1 }
+  - { pattern: synco_8_4_8_4, weight: 2 }
+
+# 动机权重（典雅对称）
+motif_weights:
+  - { type: ASCENDING, weight: 28 }
+  - { type: DESCENDING, weight: 28 }
+  - { type: ARCH, weight: 22 }
+  - { type: VALLEY, weight: 15 }
+  - { type: REPEAT, weight: 5 }
+  - { type: RANDOM, weight: 2 }

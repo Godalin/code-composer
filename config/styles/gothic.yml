@@ -1,0 +1,49 @@
+# 哥特风格配置
+
+name: gothic
+display_name: "哥特风格"
+description: "黑暗、阴郁的哥特风格，使用小调和弗里几亚调式"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: pendulum
+blue_notes: false
+
+# 默认值
+defaults:
+  key: D
+  scale: phrygian
+  tempo: 72
+  octave: 3
+  progression: 1min-2-1min
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/gothic.yml
+  - progressions/minor.yml
+
+# 节奏权重 - 偏好长音符和缓慢节奏
+rhythm_weights:
+  # 长音符为主 - 营造庄严阴郁感
+  - { pattern: whole, weight: 8 }
+  - { pattern: two_half, weight: 7 }
+  - { pattern: half_2, weight: 5 }
+  - { pattern: 4_2_4, weight: 4 }
+  # 基础四分音符
+  - { pattern: even_4, weight: 4 }
+  - { pattern: 4_4_2, weight: 3 }
+  # 八分音符 - 少量使用
+  - { pattern: 4_8_8_4_4, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 2 }
+  - { pattern: 8x4_4x2, weight: 1 }
+  - { pattern: 2_8x4, weight: 2 }
+  # 避免快节奏和切分
+
+# 动机权重 - 强调下行和重复
+motif_weights:
+  - { type: ASCENDING, weight: 15 }
+  - { type: DESCENDING, weight: 40 }
+  - { type: ARCH, weight: 10 }
+  - { type: VALLEY, weight: 15 }
+  - { type: REPEAT, weight: 15 }
+  - { type: RANDOM, weight: 5 }

@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://code-composer/schemas/scales.schema.json",
+  "title": "音阶配置",
+  "description": "音阶库配置文件的 JSON Schema",
+  "type": "object",
+  "required": ["scales"],
+  "properties": {
+    "scales": {
+      "type": "object",
+      "description": "音阶定义集合",
+      "additionalProperties": {
+        "$ref": "#/definitions/Scale"
+      }
+    }
+  },
+  "definitions": {
+    "Scale": {
+      "type": "object",
+      "description": "单个音阶定义",
+      "required": ["name", "degrees"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "音阶名称"
+        },
+        "description": {
+          "type": "string",
+          "description": "音阶描述"
+        },
+        "degrees": {
+          "type": "array",
+          "description": "音阶度数列表",
+          "items": {
+            "$ref": "#/definitions/ScaleDegree"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ScaleDegree": {
+      "type": "array",
+      "description": "音阶度数 [度数, 变音记号]，变音记号: -1=♭, 0=自然, 1=♯",
+      "items": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7,
+          "description": "度数 (1-7)"
+        },
+        {
+          "type": "integer",
+          "minimum": -1,
+          "maximum": 1,
+          "description": "变音记号 (-1=♭, 0=自然, 1=♯)"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    }
+  }
+}

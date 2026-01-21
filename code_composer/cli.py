@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .composer import compose
 from .frontend import compile_c_code
-from .styles import create_style_with_overrides, get_style
+from .styles import create_style_with_overrides, get_style, list_styles
+from .config_loader import load_scales
 from .exporter import export_to_midi, midi_to_mp3, play_alda_code
 from .structures import print_composition_tree
 from .theory import (
@@ -77,9 +78,8 @@ def create_parser():
     parser.add_argument(
         '--scale',
         type=str,
-        choices=['major', 'minor', 'dorian', 'pentatonic', 'gypsy_minor', 'gypsy_major'],
         default=None,
-        help='音阶/调式（默认使用风格的默认值）'
+        help='音阶/调式（默认使用风格的默认值，可用: ' + ', '.join(load_scales().keys()) + '）'
     )
     
     parser.add_argument(
@@ -127,9 +127,8 @@ def create_parser():
     parser.add_argument(
         '--style',
         type=str,
-        choices=['default', 'jazz', 'waltz', 'minuet', 'chinese'],
         default='default',
-        help='音乐风格（默认：default，waltz(3/4)、minuet(6/8 小步舞曲)、chinese(五声五阶)）'
+        help='音乐风格（可用: ' + ', '.join(list_styles()) + '）'
     )
     
     parser.add_argument(

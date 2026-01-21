@@ -1,0 +1,19 @@
+# 爵士和弦进行库
+# 适用于多种音阶的爵士风格进行
+
+progressions:
+  2min-5-1:
+    name: "经典爵士 Bebop"
+    description: "最经典的爵士 II-V-I 进行"
+  
+  6-2min-5-1:
+    name: "扩展 Standard"
+    description: "标准的扩展爵士进行"
+  
+  1maj7-6min7-2min7-5dom7:
+    name: "现代爵士"
+    description: "现代爵士风格，使用七和弦"
+  
+  2min7-5dom7-1maj7-6min7:
+    name: "转位爵士"
+    description: "转位的爵士进行"

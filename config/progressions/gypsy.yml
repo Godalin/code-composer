@@ -1,0 +1,32 @@
+# 吉普赛音阶和弦进行库
+
+progressions:
+  # 吉普赛小调
+  1min-2-5-1min:
+    name: "吉普赛基础"
+    description: "吉普赛小调的基础进行"
+  
+  1min-7-6-7:
+    name: "吉普赛回旋"
+    description: "回旋曲风格"
+  
+  1min-2-3-1min:
+    name: "匈牙利式"
+    description: "匈牙利民间音乐风格"
+  
+  6-7-1min-2:
+    name: "东欧风情"
+    description: "东欧民间音乐风格"
+  
+  # 吉普赛大调（双和声大调）
+  1-2-3-1:
+    name: "双和声行进"
+    description: "双和声大调的进行"
+  
+  1-b2-7-1:
+    name: "中东风格"
+    description: "具有中东特色的进行"
+  
+  1-5-6-7:
+    name: "神秘进行"
+    description: "神秘的东方风格"

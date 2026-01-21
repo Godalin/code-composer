@@ -1,0 +1,58 @@
+# 爵士风格配置
+
+name: jazz
+display_name: "爵士"
+description: "复杂节奏和即兴感的爵士风格"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: arpeggio
+blue_notes: true
+
+# 默认值
+defaults:
+  key: C
+  scale: dorian
+  tempo: 140
+  octave: 4
+  progression: 2min-5-1
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/jazz.yml
+  - progressions/major.yml
+  - progressions/minor.yml
+  - progressions/dorian.yml
+
+# 节奏权重（强调三连音和复杂节奏）
+rhythm_weights:
+  - { pattern: 6x6, weight: 9 }
+  - { pattern: 12x12, weight: 9 }
+  - { pattern: 6x3_4x2, weight: 8 }
+  - { pattern: 4_6x3_4, weight: 8 }
+  - { pattern: 6x6, weight: 9 }
+  - { pattern: 12x12, weight: 9 }
+  - { pattern: 6x3_4x2, weight: 8 }
+  - { pattern: 4_6x3_4, weight: 8 }
+  - { pattern: 6x6, weight: 9 }
+  - { pattern: 12x12, weight: 9 }
+  - { pattern: synco_8_4_8_4_4, weight: 5 }
+  - { pattern: synco_4_8_4_8_4, weight: 5 }
+  - { pattern: synco_8_8_4_8_8_4, weight: 5 }
+  - { pattern: 8x8, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 4 }
+  - { pattern: 4_8_8_4_4, weight: 3 }
+  - { pattern: 16x4_8_8_4x2, weight: 5 }
+  - { pattern: 4_16x4_8_8_4, weight: 5 }
+  - { pattern: two_half, weight: 1 }
+  - { pattern: even_4, weight: 1 }
+  - { pattern: half_2, weight: 1 }
+
+# 动机权重（更多变化和重复）
+motif_weights:
+  - { type: ASCENDING, weight: 22 }
+  - { type: DESCENDING, weight: 22 }
+  - { type: ARCH, weight: 18 }
+  - { type: VALLEY, weight: 18 }
+  - { type: REPEAT, weight: 10 }
+  - { type: RANDOM, weight: 10 }

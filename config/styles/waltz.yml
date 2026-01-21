@@ -1,0 +1,42 @@
+# 圆舞曲风格配置
+
+name: waltz
+display_name: "圆舞曲"
+description: "3/4拍子的维也纳圆舞曲风格"
+
+# 基础参数
+time_signature: 3/4
+bass_pattern: waltz_oom_pah
+blue_notes: false
+
+# 默认值
+defaults:
+  key: C
+  scale: major
+  tempo: 150
+  octave: 4
+  progression: 1-4-5-4
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/major.yml
+  - progressions/minor.yml
+
+# 节奏权重（3/4拍子节奏）
+rhythm_weights:
+  - { pattern: even_3, weight: 5 }
+  - { pattern: 2_4, weight: 3 }
+  - { pattern: 4_8_8_4, weight: 6 }
+  - { pattern: 8_8_4_4, weight: 4 }
+  - { pattern: synco_8_4_8_4, weight: 4 }
+  - { pattern: 4_2, weight: 2 }
+  - { pattern: 8x6, weight: 3 }
+
+# 动机权重（优雅流畅）
+motif_weights:
+  - { type: ASCENDING, weight: 30 }
+  - { type: DESCENDING, weight: 30 }
+  - { type: ARCH, weight: 20 }
+  - { type: VALLEY, weight: 12 }
+  - { type: REPEAT, weight: 5 }
+  - { type: RANDOM, weight: 3 }

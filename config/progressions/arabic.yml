@@ -1,0 +1,51 @@
+# 阿拉伯/中东风格和弦进行库
+# 阿拉伯音乐通常更强调旋律和调式，和弦进行相对简单
+
+progressions:
+  # Hijaz 调式进行
+  1-4-1-5:
+    name: "基础阿拉伯进行"
+    description: "简单的 I-IV-I-V 进行，适合 Hijaz 调式"
+  
+  1-2-1:
+    name: "Hijaz 特征进行"
+    description: "强调 ♭2 特征音的短进行"
+  
+  1-4-5-1:
+    name: "阿拉伯终止式"
+    description: "传统的阿拉伯终止进行"
+  
+  1-7-6min-5:
+    name: "下行阿拉伯进行"
+    description: "下行低音线进行"
+  
+  # Bayati/Nahawand 小调风格进行
+  1min-4min-1min:
+    name: "小调阿拉伯进行"
+    description: "适合 Bayati 和 Nahawand 调式"
+  
+  1min-5-1min:
+    name: "简洁小调进行"
+    description: "简单的小调终止式"
+  
+  1min-4min-5-1min:
+    name: "传统小调进行"
+    description: "完整的小调和弦进行"
+  
+  # 持续音/踏板进行
+  1-1-1-1:
+    name: "持续音进行"
+    description: "保持主和弦，强调旋律装饰"
+  
+  1-4-1-1:
+    name: "踏板进行"
+    description: "简单的主-下属进行"
+  
+  # 特殊和弦进行
+  1-2-4-5:
+    name: "Hijaz 展开进行"
+    description: "使用 ♭2 级和弦的扩展进行"
+  
+  5-4-1-1:
+    name: "逆行进行"
+    description: "从属到主的逆向解决"

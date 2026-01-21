@@ -1,0 +1,22 @@
+# 大调和弦进行库
+
+progressions:
+  1-6min-4-5:
+    name: "流行进行"
+    description: "现代流行音乐最常见的进行（1-6-4-5）"
+  
+  1-5-4-6min:
+    name: "常见进行"
+    description: "常见进行（1-5-4-6）"
+  
+  4-5-3min-6min-2min-5-1:
+    name: "帕赫贝尔卡农进行"
+    description: "巴洛克时期经典进行"
+  
+  1-4-5-4:
+    name: "摇滚进行"
+    description: "简单有力的摇滚进行"
+  
+  6min-4-1-5:
+    name: "抒情进行"
+    description: "适合抒情歌曲的进行"

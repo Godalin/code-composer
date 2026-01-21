@@ -1,0 +1,22 @@
+# 小调和弦进行库
+
+progressions:
+  1min-6-3-7:
+    name: "自然小调进行"
+    description: "自然小调的基本进行"
+  
+  1min-4min-5min-1min:
+    name: "基础小调进行"
+    description: "小调最基础的进行"
+  
+  1min-6-7-1min:
+    name: "悲伤进行"
+    description: "适合忧郁情绪"
+  
+  1min-3-7-6:
+    name: "史诗进行"
+    description: "史诗感的小调进行"
+  
+  1min-4min-7-3:
+    name: "哥特进行"
+    description: "神秘的哥特风格"

@@ -22,51 +22,6 @@ class Motif(Enum):
 MotifWeight = Tuple[int, Motif]
 
 
-# 动机权重预设
-MOTIF_WEIGHT_PRESETS = {
-    'default': [
-        (25, Motif.ASCENDING),
-        (25, Motif.DESCENDING),
-        (20, Motif.ARCH),
-        (20, Motif.VALLEY),
-        (5, Motif.REPEAT),
-        (5, Motif.RANDOM),
-    ],
-    'jazz': [
-        (22, Motif.ASCENDING),
-        (22, Motif.DESCENDING),
-        (18, Motif.ARCH),
-        (18, Motif.VALLEY),
-        (10, Motif.REPEAT),
-        (10, Motif.RANDOM),
-    ],
-    'waltz': [
-        (30, Motif.ASCENDING),
-        (30, Motif.DESCENDING),
-        (20, Motif.ARCH),
-        (12, Motif.VALLEY),
-        (5, Motif.REPEAT),
-        (3, Motif.RANDOM),
-    ],
-    'minuet': [
-        (28, Motif.ASCENDING),
-        (28, Motif.DESCENDING),
-        (22, Motif.ARCH),
-        (15, Motif.VALLEY),
-        (5, Motif.REPEAT),
-        (2, Motif.RANDOM),
-    ],
-    'chinese': [
-        (50, Motif.ASCENDING),
-        (40, Motif.DESCENDING),
-        (0, Motif.ARCH),
-        (0, Motif.VALLEY),
-        (5, Motif.REPEAT),
-        (5, Motif.RANDOM),
-    ],
-}
-
-
 def choose_motif_type(weights: List[MotifWeight]) -> Motif:
     """根据权重随机选择动机类型"""
     if not weights:
@@ -79,9 +34,13 @@ def choose_motif_type(weights: List[MotifWeight]) -> Motif:
 
 def get_motif_weights(style_name: str) -> List[MotifWeight]:
     """按风格名称返回动机权重预设"""
-    if style_name in MOTIF_WEIGHT_PRESETS:
-        return MOTIF_WEIGHT_PRESETS[style_name]
-    return [(1, m) for m in Motif]
+    from .config_loader import get_style_motif_weights
+    
+    # 从配置加载动机权重
+    entries = get_style_motif_weights(style_name)
+    
+    # 转换为 MotifWeight 格式
+    return [(weight, Motif(name)) for weight, name in entries]
 
 
 # ===== 辅助函数 =====

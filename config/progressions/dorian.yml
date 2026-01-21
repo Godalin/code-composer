@@ -1,0 +1,18 @@
+# 多利亚调式和弦进行库
+
+progressions:
+  1min-4-1min-4:
+    name: "多利亚摇摆"
+    description: "多利亚调式的摇摆感"
+  
+  1min-2min-4-5:
+    name: "多利亚经典"
+    description: "经典多利亚进行"
+  
+  1min-4-7min-1min:
+    name: "多利亚回环"
+    description: "循环的多利亚进行"
+  
+  2min-5-1min-4:
+    name: "多利亚爵士"
+    description: "爵士风格的多利亚进行"

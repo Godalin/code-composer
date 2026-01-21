@@ -129,30 +129,17 @@ ENHARMONIC: Dict[str, str] = {'b#': 'c', 'e#': 'f'}
 
 # ===== 音阶 =====
 
-# 音阶定义：每个音阶由度数列表定义
-SCALE_DEGREES: Dict[str, List[ScaleDegree]] = {
-    'major': [
-        deg(1), deg(2), deg(3), deg(4), deg(5), deg(6), deg(7)
-    ],
-    'minor': [
-        deg(1), deg(2), deg(3, -1), deg(4), deg(5), deg(6, -1), deg(7, -1)
-    ],
-    'dorian': [
-        deg(1), deg(2), deg(3, -1), deg(4), deg(5), deg(6), deg(7, -1)
-    ],
-    'pentatonic': [
-        deg(1), deg(2), deg(3), deg(5), deg(6)
-    ],
-    'minor_pentatonic': [
-        deg(1), deg(3, -1), deg(4), deg(5), deg(7, -1)
-    ],
-    'gypsy_minor': [
-        deg(1), deg(2), deg(3, -1), deg(4, 1), deg(5), deg(6, -1), deg(7)
-    ],
-    'gypsy_major': [
-        deg(1), deg(2, -1), deg(3), deg(4), deg(5, -1), deg(6), deg(7)
-    ],
-}
+# 音阶定义加载（延迟加载，避免循环导入）
+_SCALE_DEGREES_CACHE: Optional[Dict[str, List[ScaleDegree]]] = None
+
+
+def _get_scale_degrees() -> Dict[str, List[ScaleDegree]]:
+    """获取音阶度数定义（带缓存）"""
+    global _SCALE_DEGREES_CACHE
+    if _SCALE_DEGREES_CACHE is None:
+        from .config_loader import load_scales
+        _SCALE_DEGREES_CACHE = load_scales()
+    return _SCALE_DEGREES_CACHE
 
 
 def degrees_to_intervals(degrees: List[ScaleDegree]) -> List[int]:
@@ -190,9 +177,10 @@ def build_scale(tonic: Pitch, intervals: List[int]) -> ScalePitches:
 
 def get_scale(tonic: Pitch, scale: str) -> ScalePitches:
     """获取带八度的音阶序列。"""
-    if scale not in SCALE_DEGREES:
+    scale_degrees = _get_scale_degrees()
+    if scale not in scale_degrees:
         raise ValueError(f"未知音阶: {scale}")
-    intervals = degrees_to_intervals(SCALE_DEGREES[scale])
+    intervals = degrees_to_intervals(scale_degrees[scale])
     return build_scale(tonic, intervals)
 
 
@@ -478,7 +466,8 @@ def gen_progression(tonic: Pitch, scale: str, progression_name: str) -> Progress
     """
     # 获取基础音阶和度数列表
     scale_pitches = get_scale(tonic, scale)
-    scale_degrees_list = SCALE_DEGREES[scale]
+    scale_degrees = _get_scale_degrees()
+    scale_degrees_list = scale_degrees[scale]
     
     tokens = progression_name.split('-')
     chords: List[Tuple[str, Chord]] = []
@@ -523,66 +512,34 @@ def gen_progression_alda(tonic: str, scale: str, progression_name: str, tempo: i
 
 # ===== 和声进行风格库 =====
 
-SCALE_PROGRESSIONS: Dict[str, Dict[str, str]] = {
-    'major': {
-        '1-6min-4-5': '流行进行（1-6-4-5）',
-        '1-5-4-6min': '常见进行（1-5-4-6）',
-        '4-5-3min-6min-2min-5-1': '帕赫贝尔卡农进行',
-        '1-4-5-4': '摇滚进行',
-        '6min-4-1-5': '抒情进行',
-    },
-    'minor': {
-        '1min-6-3-7': '自然小调进行',
-        '1min-4min-5min-1min': '基础小调进行',
-        '1min-6-7-1min': '悲伤进行',
-        '1min-3-7-6': '史诗进行',
-        '1min-4min-7-3': '哥特进行',
-    },
-    'dorian': {
-        '1min-4-1min-4': '多利亚摇摆',
-        '1min-2min-4-5': '多利亚经典',
-        '1min-4-7min-1min': '多利亚回环',
-        '2min-5-1min-4': '多利亚爵士',
-    },
-    'pentatonic': {
-        '1-6min-2-1': '宫商角宫',
-        '1-3-4-1': '五声简约',
-        '1-2-4-5': '中国风',
-        '1-4-5-1': '民谣进行',
-    },
-    'minor_pentatonic': {
-        '1min-4min-1min': '布鲁斯摇摆',
-        '1min-5-1min': '布鲁斯基础',
-        '1min-b7-4min-1min': '布鲁斯进行',
-        '4min-1min-5-1min': '摇滚布鲁斯',
-    },
-    'gypsy_minor': {
-        '1min-2-5-1min': '吉普赛基础',
-        '1min-7-6-7': '吉普赛回旋',
-        '1min-2-3-1min': '匈牙利式',
-        '6-7-1min-2': '东欧风情',
-    },
-    'gypsy_major': {
-        '1-2-3-1': '双和声行进',
-        '1-b2-7-1': '中东风格',
-        '1-5-6-7': '神秘进行',
-    },
-}
+# 和弦进行加载（延迟加载）
+_PROGRESSIONS_CACHE: Optional[Dict[str, Dict[str, str]]] = None
 
-# 爵士专用和声进行（适用于多种音阶）
-JAZZ_PROGRESSIONS: Dict[str, str] = {
-    '2min-5-1': '经典爵士 Bebop',
-    '6-2min-5-1': '扩展 Standard',
-    '1maj7-6min7-2min7-5dom7': '现代爵士',
-    '2min7-5dom7-1maj7-6min7': '转位爵士',
-}
+
+def _get_all_progressions() -> Dict[str, Dict[str, str]]:
+    """获取所有和弦进行（按音阶分类，带缓存）"""
+    global _PROGRESSIONS_CACHE
+    if _PROGRESSIONS_CACHE is None:
+        from .config_loader import load_progressions
+        _PROGRESSIONS_CACHE = {
+            'major': load_progressions('progressions/major.yml'),
+            'minor': load_progressions('progressions/minor.yml'),
+            'dorian': load_progressions('progressions/dorian.yml'),
+            'pentatonic': load_progressions('progressions/pentatonic.yml'),
+            'minor_pentatonic': load_progressions('progressions/pentatonic.yml'),  # 共用五声
+            'gypsy_minor': load_progressions('progressions/gypsy.yml'),
+            'gypsy_major': load_progressions('progressions/gypsy.yml'),
+            'jazz': load_progressions('progressions/jazz.yml'),
+        }
+    return _PROGRESSIONS_CACHE
 
 
 def get_available_progressions(scale: str, style: str = 'default') -> Dict[str, str]:
     """获取指定音阶与风格下的可用和声进行。"""
-    base_progressions = SCALE_PROGRESSIONS.get(scale, SCALE_PROGRESSIONS['major']).copy()
+    all_progressions = _get_all_progressions()
+    base_progressions = all_progressions.get(scale, all_progressions['major']).copy()
     if style == 'jazz':
-        base_progressions.update(JAZZ_PROGRESSIONS)
+        base_progressions.update(all_progressions['jazz'])
     return base_progressions
 
 

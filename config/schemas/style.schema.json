@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://code-composer/schemas/style.schema.json",
+  "title": "风格配置",
+  "description": "音乐风格配置文件的 JSON Schema",
+  "type": "object",
+  "required": ["name", "time_signature", "rhythm_weights", "motif_weights"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "风格标识符"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "风格显示名称"
+    },
+    "description": {
+      "type": "string",
+      "description": "风格描述"
+    },
+    "time_signature": {
+      "type": "string",
+      "description": "拍号",
+      "pattern": "^[0-9]+/[0-9]+$",
+      "examples": ["4/4", "3/4", "6/8"]
+    },
+    "bass_pattern": {
+      "type": "string",
+      "description": "低音模式",
+      "enum": ["block", "double", "arpeggio", "pendulum", "waltz_oom_pah", "minuet_duple"],
+      "default": "block"
+    },
+    "blue_notes": {
+      "type": "boolean",
+      "description": "是否启用蓝调音符",
+      "default": false
+    },
+    "defaults": {
+      "$ref": "#/definitions/Defaults"
+    },
+    "progression_sources": {
+      "type": "array",
+      "description": "引用的和弦进行配置文件路径列表",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rhythm_weights": {
+      "type": "array",
+      "description": "节奏权重配置",
+      "items": {
+        "$ref": "#/definitions/RhythmWeight"
+      },
+      "minItems": 1
+    },
+    "motif_weights": {
+      "type": "array",
+      "description": "动机权重配置",
+      "items": {
+        "$ref": "#/definitions/MotifWeight"
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "Defaults": {
+      "type": "object",
+      "description": "默认参数",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "默认调性",
+          "pattern": "^[A-Ga-g][#b]?$",
+          "examples": ["C", "D", "Eb", "F#"]
+        },
+        "scale": {
+          "type": "string",
+          "description": "默认音阶",
+          "examples": ["major", "minor", "pentatonic", "dorian"]
+        },
+        "tempo": {
+          "type": "integer",
+          "description": "默认速度 (BPM)",
+          "minimum": 20,
+          "maximum": 300,
+          "default": 120
+        },
+        "octave": {
+          "type": "integer",
+          "description": "默认八度",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 4
+        },
+        "progression": {
+          "type": "string",
+          "description": "默认和弦进行",
+          "examples": ["1-6min-4-5", "2min-5-1"]
+        }
+      }
+    },
+    "RhythmWeight": {
+      "type": "object",
+      "description": "节奏权重条目",
+      "required": ["pattern", "weight"],
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "description": "节奏型名称（引用 rhythms 配置）"
+        },
+        "weight": {
+          "type": "integer",
+          "description": "权重值",
+          "minimum": 0
+        }
+      }
+    },
+    "MotifWeight": {
+      "type": "object",
+      "description": "动机权重条目",
+      "required": ["type", "weight"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "动机类型",
+          "enum": ["ASCENDING", "DESCENDING", "ARCH", "VALLEY", "REPEAT", "RANDOM"]
+        },
+        "weight": {
+          "type": "integer",
+          "description": "权重值",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

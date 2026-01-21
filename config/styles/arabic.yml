@@ -1,0 +1,52 @@
+# 阿拉伯风格配置
+
+name: arabic
+display_name: "阿拉伯风格"
+description: "中东/阿拉伯风格，使用 Hijaz 等调式，强调旋律装饰"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: arpeggio
+blue_notes: false
+
+# 默认值
+defaults:
+  key: D
+  scale: hijaz
+  tempo: 80
+  octave: 4
+  progression: 1-4-1-5
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/arabic.yml
+
+# 节奏权重 - 偏好较长的音符，抒情流畅
+rhythm_weights:
+  # 长音符为主
+  - { pattern: whole, weight: 5 }
+  - { pattern: two_half, weight: 6 }
+  - { pattern: half_2, weight: 4 }
+  - { pattern: 4_2_4, weight: 5 }
+  # 基础四分音符
+  - { pattern: even_4, weight: 3 }
+  - { pattern: 4_4_2, weight: 3 }
+  # 八分音符 - 适度使用
+  - { pattern: 4_8_8_4_4, weight: 4 }
+  - { pattern: 8_8_4x3, weight: 3 }
+  - { pattern: 8x4_4x2, weight: 2 }
+  - { pattern: 4x2_8x4, weight: 2 }
+  # 装饰性节奏
+  - { pattern: 8_8_4_8_8_4, weight: 3 }
+  - { pattern: 2_8x4, weight: 3 }
+  # 切分节奏 - 少量使用
+  - { pattern: synco_8_4_8_4_4, weight: 2 }
+
+# 动机权重 - 强调上行和下行旋律线
+motif_weights:
+  - { type: ASCENDING, weight: 35 }
+  - { type: DESCENDING, weight: 35 }
+  - { type: ARCH, weight: 15 }
+  - { type: VALLEY, weight: 10 }
+  - { type: REPEAT, weight: 3 }
+  - { type: RANDOM, weight: 2 }

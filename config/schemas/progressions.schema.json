@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://code-composer/schemas/progressions.schema.json",
+  "title": "和弦进行配置",
+  "description": "和弦进行库配置文件的 JSON Schema",
+  "type": "object",
+  "required": ["progressions"],
+  "properties": {
+    "progressions": {
+      "type": "object",
+      "description": "和弦进行定义集合",
+      "additionalProperties": {
+        "$ref": "#/definitions/Progression"
+      }
+    }
+  },
+  "definitions": {
+    "Progression": {
+      "type": "object",
+      "description": "单个和弦进行定义",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "和弦进行名称"
+        },
+        "description": {
+          "type": "string",
+          "description": "和弦进行描述"
+        }
+      }
+    }
+  }
+}

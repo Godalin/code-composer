@@ -1,0 +1,56 @@
+# 哥特/黑暗风格和弦进行库
+# 强调小调色彩和阴郁氛围
+
+progressions:
+  # 基础小调进行
+  1min-4min-5-1min:
+    name: "哥特终止式"
+    description: "经典的小调完全终止"
+  
+  1min-6-7-1min:
+    name: "下行哥特进行"
+    description: "强调下行低音线"
+  
+  1min-7-6-5:
+    name: "阴郁下行"
+    description: "持续下行的忧郁感"
+  
+  # 弗里几亚色彩进行
+  1min-2-1min:
+    name: "弗里几亚特征"
+    description: "强调 ♭2 的黑暗色彩"
+  
+  1min-2-7-1min:
+    name: "弗里几亚终止"
+    description: "典型的弗里几亚半终止"
+  
+  1min-2-3-2:
+    name: "徘徊进行"
+    description: "在 ♭2 和 ♭3 之间徘徊"
+  
+  # 和声小调进行
+  1min-4min-5maj-1min:
+    name: "和声小调进行"
+    description: "使用和声小调的 V 级大和弦"
+  
+  1min-5-6-5:
+    name: "悬念进行"
+    description: "营造紧张感的进行"
+  
+  # 持续低音进行
+  1min-1min-4min-1min:
+    name: "踏板哥特"
+    description: "保持低音的阴郁进行"
+  
+  1min-7-1min-5:
+    name: "教堂进行"
+    description: "中世纪教堂音乐风格"
+  
+  # 戏剧性进行
+  6-5-4min-5:
+    name: "戏剧进行"
+    description: "充满戏剧张力"
+  
+  1min-3-4min-5:
+    name: "展开进行"
+    description: "逐步展开的哥特进行"
