@@ -12,9 +12,9 @@
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Any
-from fractions import Fraction
 
 from .durations import sum_note_groups_beats
+from .theory import Chord
 
 
 def _convert_note_to_alda(note_name: str) -> str:
@@ -119,7 +119,7 @@ class Bar:
     phrase_idx: int  # 所属乐句的索引
     chord_idx: int  # 在乐句内的和声索引（0-based）
     chord_name: str  # 和弦名称（如 'C', 'Am'）
-    chord_notes: List[str]  # 当前和弦的内音（如 ['c', 'e', 'g']）
+    chord: Chord  # 当前和弦的 Pitch 对象列表
     melody: List[List[Note]]  # 旋律：并行音符组的序列（支持双音等多声部）
     bass: List[List[Note]]  # 伴奏：并行音符组的序列（每组同时发声）
 
@@ -133,7 +133,7 @@ class ChordSpan:
     """和声跨度：一个 token 对应的和声及其小节"""
     token_idx: int  # Token 的索引（全局）
     chord_name: str  # 和弦名称
-    chord_notes: List[str]  # 内音列表
+    chord: Chord  # Pitch 对象列表
     bars: List[Bar] = field(default_factory=list)  # 1-2 个小节
 
     @property
@@ -229,7 +229,7 @@ class Composition:
                     tok = self.tokens[span.token_idx]
                     token_info = f"#{span.token_idx}:{tok.type.name}({repr(tok.value)[:12]})"
 
-                chord_str = f"{span.chord_name} {span.chord_notes}"
+                chord_str = f"{span.chord_name} {[p.name for p in span.chord]}"
                 bars_str = " → ".join(f"Bar{bar.bar_num}" for bar in span.bars)
                 lines.append(f"│  • {chord_str:20} | {bars_str} | {token_info}")
             lines.append("└─")
@@ -265,7 +265,7 @@ class Composition:
                     f"{bar.bar_num:^6}\t| "
                     f"P{bar.phrase_idx:^6}\t| "
                     f"{bar.chord_name:^10}\t| "
-                    f"{str(bar.chord_notes):^15}\t| "
+                    f"{str([p.name for p in bar.chord]):^15}\t| "
                     f"{melody_len:^8}\t| "
                     f"{bass_len:^8}\t| "
                     f"{token_info:^30}"
@@ -305,7 +305,7 @@ def print_composition_tree(comp: Composition) -> str:
             else:
                 token_info = f" ← Token#{span.token_idx}:UNKNOWN"
 
-            chord_str = ", ".join(span.chord_notes)
+            chord_str = ", ".join(p.name for p in span.chord)
             lines.append(f"  {span.chord_name} ({chord_str}){token_info}")
 
             # 遍历该和声的小节

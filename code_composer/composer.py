@@ -20,7 +20,7 @@ from typing import List, Optional, Tuple
 from .frontend import Token, TokenType
 from .styles import Style
 from .rhythms import RhythmPattern
-from .theory import gen_progression, get_available_progressions, Pitch, Progression, Chord
+from .theory import gen_progression, get_available_progressions, get_scale, Pitch, Progression, Chord, ScalePitches
 from .structures import (
     Bar,
     ChordSpan,
@@ -29,7 +29,7 @@ from .structures import (
     Note,
     note_groups_to_alda,
 )
-from .motif import generate_motif_notes, choose_motif_type, MotifWeight
+from .motif import create_motif_generator, choose_motif_type, MotifWeight
 from .bass import generate_bass_bar
 from .durations import duration_to_beats, fill_rests
 
@@ -37,24 +37,26 @@ from .durations import duration_to_beats, fill_rests
 # ===== 小节生成函数 =====
 
 def generate_bar(
-    chord_notes: List[str],
+    chord: Chord,
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
     motif_weights: List[MotifWeight],
     octave: int,
-    use_blue_notes: bool = False,
+    use_blue_notes: bool,
+    scale_pitches: ScalePitches,
 ) -> List[List[Note]]:
     """为单个小节生成旋律音符组序列。
 
     参数：
-    - chord_notes: 当前和弦包含的音符名称列表（如 ['c', 'e', 'g']）。
+    - chord: 当前和弦的 Pitch 对象列表。
     - rhythm_patterns: 可选的节奏模式列表，每个模式为 (durations, accents)。
     - rhythm_weights: 与节奏模式一一对应的权重，用于随机选型。
     - bar_target_beats: 小节目标拍数，用于补齐休止符。
     - motif_weights: 动机类型权重；None 表示均匀选择。
-    - octave: 旋律所在八度。
-    - use_blue_notes: 是否允许蓝调音符扩展可选音集合。
+    - octave: 旋律所在八度提示。
+    - use_blue_notes: 是否允许补充音（暂不使用）。
+    - scale_pitches: 音阶音符列表。
 
     返回：
     - List[List[Note]]：按节奏顺序排列的音符组（每个子列表可容纳和弦堆叠）。
@@ -69,28 +71,21 @@ def generate_bar(
         pattern_idx = 0
 
     durations, accents = rhythm_patterns[pattern_idx]
-    num_notes = len(durations)
     
     # 选择动机类型
     motif_type = choose_motif_type(motif_weights)
     
-    # 生成符合和弦的旋律音符
-    motif_notes = generate_motif_notes(
-        chord_notes=chord_notes,
-        num_notes=num_notes,
-        motif_type=motif_type,
-        octave=octave,
-        use_blue_notes=use_blue_notes,
-    )
+    # 创建动机生成器
+    motif_gen = create_motif_generator(chord, scale_pitches, motif_type, octave)
     
-    # 将动机音符与节奏、重音转换为 Note 列表
+    # 将生成器音符与节奏、重音转换为 Note 列表
     volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
     notes: List[List[Note]] = []
-    for idx, (name, note_octave) in enumerate(motif_notes):
-        dur = durations[idx] if idx < len(durations) else '4'
+    for idx, dur in enumerate(durations):
+        pitch = next(motif_gen)  # 从生成器获取下一个音符
         acc = accents[idx] if idx < len(accents) else 0
         vel = volume_map.get(acc, 80)
-        notes.append([Note(name=name, octave=note_octave, velocity=vel, duration=dur)])
+        notes.append([Note(name=pitch.name, octave=pitch.octave, velocity=vel, duration=dur)])
     
     # 补齐不足的拍子
     target = bar_target_beats
@@ -136,9 +131,6 @@ def build_phrases_skeleton(
         for chord_idx in range(tokens_per_phrase):
             actual_chord_idx = chord_idx % len(progression)
             chord_name, chord_pitches = progression[actual_chord_idx]
-            # 将 Pitch 对象转换为字符串（note names）
-            chord_notes = [p.name for p in chord_pitches]
-            chord_notes_tuple = tuple(chord_notes)
 
             # 分配 token（不足则用 -1 标记补位）
             token_idx = global_token_idx if global_token_idx < num_tokens else -1
@@ -152,7 +144,7 @@ def build_phrases_skeleton(
                     phrase_idx=phrase_idx,
                     chord_idx=chord_idx,
                     chord_name=chord_name,
-                    chord_notes=list(chord_notes_tuple),
+                    chord=chord_pitches,
                     melody=[],
                     bass=[],
                 )
@@ -163,7 +155,7 @@ def build_phrases_skeleton(
             span = ChordSpan(
                 token_idx=token_idx,
                 chord_name=chord_name,
-                chord_notes=list(chord_notes_tuple),
+                chord=chord_pitches,
                 bars=bars_list,
             )
             chord_spans_list.append(span)
@@ -189,6 +181,7 @@ def fill_phrases_content(
     octave: int,
     use_blue_notes: bool,
     bass_pattern_mode: str,
+    scale_pitches: ScalePitches,
 ) -> List[Phrase]:
     """填充所有小节的旋律和伴奏内容"""
     phrases_with_content = []
@@ -202,18 +195,19 @@ def fill_phrases_content(
             for bar in span.bars:
                 # 生成这个小节的旋律
                 melody_notes = generate_bar(
-                    span.chord_notes,
+                    span.chord,  # 传递 Chord (List[Pitch])
                     rhythm_patterns,
                     rhythm_weights,
                     bar_target_beats,
                     motif_weights,
                     octave,
                     use_blue_notes,
+                    scale_pitches,  # 传递音阶音符
                 )
                 
                 # 生成伴奏
                 bass_text = generate_bass_bar(
-                    span.chord_notes,
+                    span.chord,
                     bass_pattern_mode,
                     bar_target_beats,
                     octave,
@@ -278,6 +272,9 @@ def compose(
         scale=scale,
         progression_name=chord_progression_name
     )
+    
+    # 生成音阶音符列表（用于旋律生成）
+    scale_pitches = get_scale(tonic_pitch, scale)
 
     # 设置随机种子
     if seed is not None:
@@ -322,6 +319,7 @@ def compose(
         octave,
         use_blue_notes,
         bass_pattern,
+        scale_pitches,
     )
 
     # 创建 Composition 对象

@@ -16,6 +16,7 @@ from fractions import Fraction
 from typing import List, Callable, Dict
 
 from .structures import Note
+from .theory import Chord
 from .durations import duration_to_beats, fill_rests
 
 
@@ -185,7 +186,7 @@ BASS_PATTERNS: Dict[str, Callable[[List[str], int, Fraction], List[List[Note]]]]
 
 
 def generate_bass_bar(
-    chord_notes: List[str],
+    chord: Chord,
     bass_pattern_mode: str,
     bar_target_beats: Fraction,
     octave: int,
@@ -194,7 +195,7 @@ def generate_bass_bar(
     根据低音模式生成一个小节的低音
     
     参数：
-    - chord_notes: 和弦音符列表（如 ['c', 'e', 'g']）
+    - chord: 和弦（Pitch 对象列表）
     - bass_pattern_mode: 低音模式名称（'block', 'double', 'arpeggio' 等）
     - bar_target_beats: 小节目标拍数
     - octave: 旋律八度（低音八度 = octave - 1）
@@ -202,6 +203,7 @@ def generate_bass_bar(
     返回：
     - 低音小节的音符组列表
     """
+    chord_notes = [p.name for p in chord]
     bass_octave = octave - 1
     
     if not chord_notes:
