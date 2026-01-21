@@ -5,15 +5,22 @@ Code Composer 命令行工具
 
 import argparse
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
 
 from .composer import compose
 from .frontend import compile_c_code
-from .styles import create_style_with_overrides
-from .exporter import export_to_midi, midi_to_mp3
+from .styles import create_style_with_overrides, get_style
+from .exporter import export_to_midi, midi_to_mp3, play_alda_code
 from .structures import print_composition_tree
+from .theory import (
+    get_available_progressions,
+    get_default_progression,
+    gen_scale_alda,
+    gen_progression_alda,
+)
 
 
 def create_parser():
@@ -291,11 +298,6 @@ def determine_output_path(output: str, format_type: str) -> str:
 
 def main():
     """主命令行入口"""
-    import shutil
-    from .theory import get_available_progressions, get_default_progression
-    from .styles import get_style
-    from .exporter import export_to_midi, midi_to_mp3
-    
     parser = create_parser()
     args = parser.parse_args()
     
@@ -345,18 +347,15 @@ def main():
     try:
         # 处理测试模式：音阶 / 和弦进行
         if args.test_scale or args.test_chord:
-            from .exporter import play_alda_code
             if args.test_scale:
                 if args.verbose:
                     print(f"🎵 音阶测试模式")
                     print(f"   调性: {args.key}, 音阶: {args.scale}")
-                from .theory import gen_scale_alda
                 alda_code = gen_scale_alda(args.key, args.scale, args.tempo)
             else:
                 if args.verbose:
                     print(f"🎵 和弦进行测试模式")
                     print(f"   调性: {args.key}, 音阶: {args.scale}, 进行: {args.chord}")
-                from .theory import gen_progression_alda
                 alda_code = gen_progression_alda(args.key, args.scale, args.chord, args.tempo)
             
             alda_file = None
