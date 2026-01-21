@@ -13,17 +13,14 @@
 """
 
 import random
-from fractions import Fraction
-from typing import List, Tuple, Optional
 from dataclasses import replace
+from fractions import Fraction
+from typing import List, Optional, Tuple
 
 from .frontend import Token, TokenType
 from .styles import Style
 from .rhythms import RhythmPattern
-from .theory import (
-    generate_progression,
-    get_available_progressions,
-)
+from .theory import gen_progression, get_available_progressions, Pitch, Progression, Chord
 from .structures import (
     Bar,
     ChordSpan,
@@ -115,7 +112,7 @@ def build_phrases_skeleton(
     tokens_per_phrase: int,
     num_tokens: int,
     bars_per_token: int,
-    progression: List[Tuple[str, List[str]]],
+    progression: Progression,
 ) -> List[Phrase]:
     """构建乐句骨架（仅元数据，不含旋律/伴奏）。
 
@@ -138,7 +135,9 @@ def build_phrases_skeleton(
 
         for chord_idx in range(tokens_per_phrase):
             actual_chord_idx = chord_idx % len(progression)
-            chord_name, chord_notes = progression[actual_chord_idx]
+            chord_name, chord_pitches = progression[actual_chord_idx]
+            # 将 Pitch 对象转换为字符串（note names）
+            chord_notes = [p.name for p in chord_pitches]
             chord_notes_tuple = tuple(chord_notes)
 
             # 分配 token（不足则用 -1 标记补位）
@@ -273,8 +272,9 @@ def compose(
         )
 
     # 生成实际的和声进行
-    progression = generate_progression(
-        tonic=key,
+    tonic_pitch = Pitch(key, 4)
+    progression = gen_progression(
+        tonic=tonic_pitch,
         scale=scale,
         progression_name=chord_progression_name
     )

@@ -80,6 +80,12 @@ def create_parser():
         action='store_true',
         help='测试模式：只播放当前音阶（覆盖2个八度），不生成旋律'
     )
+
+    parser.add_argument(
+        '--test-chord',
+        action='store_true',
+        help='测试模式：只播放当前和声进行（分解和弦），不生成旋律'
+    )
     
     # 输出参数
     parser.add_argument(
@@ -288,13 +294,14 @@ def main():
     import shutil
     from .theory import get_available_progressions, get_default_progression
     from .styles import get_style
+    from .exporter import export_to_midi, midi_to_mp3
     
     parser = create_parser()
     args = parser.parse_args()
     
     # 验证：非测试模式下必须提供输入源代码
-    if not args.test_scale and not args.file and not args.code:
-        parser.error("需要提供 -f/--file 或 -c/--code 参数，除非使用 --test-scale 模式")
+    if not args.test_scale and not args.test_chord and not args.file and not args.code:
+        parser.error("需要提供 -f/--file 或 -c/--code 参数，除非使用 --test-scale/--test-chord 模式")
     
     # 从风格获取默认值，用户指定的参数覆盖
     style_obj = get_style(args.style)
@@ -336,31 +343,44 @@ def main():
         args.output = os.path.join(temp_dir, 'temp_music')
     
     try:
-        # 处理音阶测试模式
-        if args.test_scale:
-            if args.verbose:
-                print(f"🎵 音阶测试模式")
-                print(f"   调性: {args.key}, 音阶: {args.scale}")
-            
-            from .theory import generate_scale_alda
+        # 处理测试模式：音阶 / 和弦进行
+        if args.test_scale or args.test_chord:
             from .exporter import play_alda_code
+            if args.test_scale:
+                if args.verbose:
+                    print(f"🎵 音阶测试模式")
+                    print(f"   调性: {args.key}, 音阶: {args.scale}")
+                from .theory import gen_scale_alda
+                alda_code = gen_scale_alda(args.key, args.scale, args.tempo)
+            else:
+                if args.verbose:
+                    print(f"🎵 和弦进行测试模式")
+                    print(f"   调性: {args.key}, 音阶: {args.scale}, 进行: {args.chord}")
+                from .theory import gen_progression_alda
+                alda_code = gen_progression_alda(args.key, args.scale, args.chord, args.tempo)
             
-            # 生成 Alda 代码
-            alda_code = generate_scale_alda(args.key, args.scale, args.tempo)
-            
-            # 如果用户指定了输出文件，保存
+            alda_file = None
             if original_output:
                 alda_file = determine_output_path(original_output, 'alda')
                 with open(alda_file, 'w') as f:
                     f.write(alda_code)
-                print(f"✓ 音阶已保存到: {alda_file}")
+                label = "音阶" if args.test_scale else "和弦进行"
+                print(f"✓ {label}已保存到: {alda_file}")
             elif args.verbose:
-                print(f"✓ 音阶代码已生成")
+                print("✓ Alda 代码已生成")
             
-            # 播放
+            # 导出 MIDI 和 MP3（如果指定了输出）
+            if original_output and alda_file:
+                midi_file = determine_output_path(original_output, 'midi')
+                mp3_file = determine_output_path(original_output, 'mp3')
+                
+                # 导出 MIDI
+                if export_to_midi(alda_file, midi_file):
+                    # 转换 MP3
+                    midi_to_mp3(midi_file, mp3_file)
+            
             if not args.no_play:
                 play_alda_code(alda_code)
-            
             return
         
         # 读取源代码

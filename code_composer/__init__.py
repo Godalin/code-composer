@@ -34,7 +34,12 @@ from .structures import (
     Note,
     print_composition_tree,
 )
-from .theory import get_scale, generate_progression, get_available_progressions, get_default_progression
+from .theory import (
+    get_scale,
+    gen_progression,
+    get_available_progressions,
+    get_default_progression
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -56,7 +61,7 @@ __all__ = [
     "play_alda_file",
     # Theory functions
     "get_scale",
-    "generate_progression",
+    "gen_progression",
     "get_available_progressions",
     "get_default_progression",
 ]
