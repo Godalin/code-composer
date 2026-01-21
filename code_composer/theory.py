@@ -6,12 +6,73 @@
 - Pitch 类型表示音高（音名 + 八度）
 - 常见音阶（大调、小调、Dorian、多种五声音阶、Gypsy）生成
 - 根据音阶叠置三度生成和弦（triad / seventh）
-- 依据罗马数字进程名称生成指定调性的和声进行
+- 依据数字和弦标记生成指定调性的和声进行
 """
 
+import re
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable, Dict, List, NewType, Optional, Tuple
+
+
+@dataclass(frozen=True)
+class ScaleDegree:
+    """音阶度数：数字(1+) + 变音记号。支持 1-7 表示音阶内度数，8+ 表示跨八度（如 9=2+12, 11=4+12, 13=6+12）。
+    
+    示例：
+        ScaleDegree(1, 0)   -> 1（主音）
+        ScaleDegree(3, -1)  -> ♭3
+        ScaleDegree(4, 1)   -> ♯4
+        ScaleDegree(9, 0)   -> 9（= 2 高一八度，用于和弦扩展）
+    """
+    number: int        # 1-7 为音阶内，8+ 表示跨八度（9=2+12, 11=4+12, 13=6+12）
+    accidental: int    # -1=♭, 0=自然, 1=♯
+    
+    def to_semitones(self) -> int:
+        """转换为相对主音的半音数（基于大调音阶）。"""
+        # 大调音阶基础半音数: 1=0, 2=2, 3=4, 4=5, 5=7, 6=9, 7=11
+        major_semitones = [0, 2, 4, 5, 7, 9, 11]
+        
+        if self.number <= 7:
+            base = major_semitones[self.number - 1]
+        else:
+            # 9, 11, 13 等：映射到 2, 4, 6，再加 12 半音
+            base_degree = ((self.number - 1) % 7) + 1
+            octave_offset = (self.number - 1) // 7
+            base = major_semitones[base_degree - 1] + 12 * octave_offset
+        
+        return base + self.accidental
+    
+    def __str__(self) -> str:
+        """显示为 '1', '♭3', '♯4', '9', '♭13' 等。"""
+        acc_str = ''
+        if self.accidental == -1:
+            acc_str = '♭'
+        elif self.accidental == 1:
+            acc_str = '♯'
+        return f"{acc_str}{self.number}"
+    
+    @staticmethod
+    def parse(s: str) -> 'ScaleDegree':
+        """从字符串解析度数，如 '1', 'b3', '#4', '♭3', '♯4', '9', '♭13'。"""
+        s = s.strip()
+        accidental = 0
+        if s.startswith('♭') or s.startswith('b'):
+            accidental = -1
+            s = s[1:]
+        elif s.startswith('♯') or s.startswith('#'):
+            accidental = 1
+            s = s[1:]
+        number = int(s)
+        if number < 1:
+            raise ValueError(f"度数必须 >= 1: {number}")
+        return ScaleDegree(number, accidental)
+
+
+# 便捷构造函数
+def deg(number: int, accidental: int = 0) -> ScaleDegree:
+    """快捷创建度数。deg(1), deg(3, -1), deg(4, 1)。"""
+    return ScaleDegree(number, accidental)
 
 
 @dataclass(frozen=True)
@@ -68,6 +129,53 @@ ENHARMONIC: Dict[str, str] = {'b#': 'c', 'e#': 'f'}
 
 # ===== 音阶 =====
 
+# 音阶定义：每个音阶由度数列表定义
+SCALE_DEGREES: Dict[str, List[ScaleDegree]] = {
+    'major': [
+        deg(1), deg(2), deg(3), deg(4), deg(5), deg(6), deg(7)
+    ],
+    'minor': [
+        deg(1), deg(2), deg(3, -1), deg(4), deg(5), deg(6, -1), deg(7, -1)
+    ],
+    'dorian': [
+        deg(1), deg(2), deg(3, -1), deg(4), deg(5), deg(6), deg(7, -1)
+    ],
+    'pentatonic': [
+        deg(1), deg(2), deg(3), deg(5), deg(6)
+    ],
+    'minor_pentatonic': [
+        deg(1), deg(3, -1), deg(4), deg(5), deg(7, -1)
+    ],
+    'gypsy_minor': [
+        deg(1), deg(2), deg(3, -1), deg(4, 1), deg(5), deg(6, -1), deg(7)
+    ],
+    'gypsy_major': [
+        deg(1), deg(2, -1), deg(3), deg(4), deg(5, -1), deg(6), deg(7)
+    ],
+}
+
+
+def degrees_to_intervals(degrees: List[ScaleDegree]) -> List[int]:
+    """将度数列表转换为半音间隔列表（用于构建音阶序列）。
+    
+    示例：
+        [deg(1), deg(2), deg(3)] -> [2, 2] (1->2: 2半音, 2->3: 2半音)
+    """
+    if not degrees:
+        return []
+    
+    intervals: List[int] = []
+    prev_semitones = degrees[0].to_semitones()
+    
+    for degree in degrees[1:]:
+        curr_semitones = degree.to_semitones()
+        interval = curr_semitones - prev_semitones
+        intervals.append(interval)
+        prev_semitones = curr_semitones
+    
+    return intervals
+
+
 def build_scale(tonic: Pitch, intervals: List[int]) -> ScalePitches:
     """按间隔生成音阶内的 Pitch 序列（带八度）。"""
     pitches: List[Pitch] = [tonic]
@@ -80,22 +188,12 @@ def build_scale(tonic: Pitch, intervals: List[int]) -> ScalePitches:
     return ScalePitches(pitches)
 
 
-# 常见音阶间隔（半音）
-SCALE_INTERVALS: Dict[str, List[int]] = {
-    'major':           [2, 2, 1, 2, 2, 2, 1],  # Ionian
-    'minor':           [2, 1, 2, 2, 1, 2, 2],  # Aeolian（自然小调）
-    'dorian':          [2, 1, 2, 2, 2, 1, 2],
-    'pentatonic':      [2, 2, 3, 2, 3],        # Anhemitonic pentatonic（大调五声）
-    'gypsy_minor':     [2, 1, 3, 1, 1, 3, 1],  # Hungarian minor
-    'gypsy_major':     [1, 3, 1, 2, 1, 3, 1],  # Double harmonic major
-}
-
-
 def get_scale(tonic: Pitch, scale: str) -> ScalePitches:
     """获取带八度的音阶序列。"""
-    if scale not in SCALE_INTERVALS:
+    if scale not in SCALE_DEGREES:
         raise ValueError(f"未知音阶: {scale}")
-    return build_scale(tonic, SCALE_INTERVALS[scale])
+    intervals = degrees_to_intervals(SCALE_DEGREES[scale])
+    return build_scale(tonic, intervals)
 
 
 def _note_to_alda(note_name: str) -> str:
@@ -123,36 +221,29 @@ def gen_scale_sequence(tonic: str, scale: str) -> ScalePitches:
     3. 使用 transpose 自动处理八度切换
     """
     scale_name = scale.lower()
-    if scale_name not in SCALE_INTERVALS:
-        raise ValueError(f"未知音阶: {scale_name}")
-    
-    intervals = SCALE_INTERVALS[scale_name]
     tonic_normalized = Pitch.normalize(tonic)
+    tonic_pitch = Pitch(tonic_normalized, 4)
     
-    # 从起始音开始：tonic o4
-    current_pitch = Pitch(tonic_normalized, 4)
-    sequence = [current_pitch]
+    # 一次获取音阶（单个八度），再整体上移 12 半音得到下一八度
+    base_scale = get_scale(tonic_pitch, scale_name)
+    upper_scale = [p.transpose(12) for p in base_scale]
     
-    # 上行两个八度（每个音阶循环一遍）
-    for cycle in range(2):
-        for interval in intervals:
-            current_pitch = current_pitch.transpose(interval)
-            sequence.append(current_pitch)
+    # 拼接：o4 上行一遍 + o5 上行一遍 + o5 下行（去掉顶点）+ o4 下行（去掉末尾避免重复顶点）
+    sequence: List[Pitch] = []
+    sequence.extend(base_scale)
+    sequence.extend(upper_scale)
+    sequence.extend([tonic_pitch.transpose(24)] * 2)
+    sequence.extend(reversed(upper_scale[:-1]))
+    sequence.extend(reversed(base_scale[:-1]))
     
-    # 顶点是上行序列的最后一个音
-    # 下行序列：从倒数第二个开始往回走（不重复顶点）
-    descend: List[Pitch] = []
-    for i in range(len(sequence) - 2, -1, -1):
-        descend.append(sequence[i])
-    
-    return ScalePitches(sequence + descend)
+    return ScalePitches(sequence)
 
 
 def gen_scale_alda(tonic: str, scale: str, tempo: int = 120) -> str:
     """
     生成音阶的 Alda 乐谱代码（琴键乐器，上行下行）。
     
-    示例：piano: (tempo 120) o4 c2 d2 e2 o5 f2 g2 c2 d2 e2 o6 f1 ...
+    示例：piano: (tempo 120) o4 c4 d4 e4 o5 f4 g4 c4 d4 e4 ...
     """
     scale_seq = gen_scale_sequence(tonic, scale)
     
@@ -163,66 +254,115 @@ def gen_scale_alda(tonic: str, scale: str, tempo: int = 120) -> str:
         if pitch.octave != current_oct:
             notes.append(f"o{pitch.octave}")
             current_oct = pitch.octave
-        notes.append(f"{_note_to_alda(pitch.name)}2")
-    
-    # 最后回到起点（全音符强调结束）
-    notes.append(f"{_note_to_alda(scale_seq[0].name)}1")
+        notes.append(f"{_note_to_alda(pitch.name)}4")
     
     return f'piano: (tempo {tempo}) {" ".join(notes)}'
 
 
 # ===== 和弦与和声进行 =====
 
-def build_chord(root: Pitch, intervals: List[int]) -> Chord:
-    """根据根音与半音间隔列表构建和弦（返回 Pitch 对象）。intervals 通常以 0 开头。"""
+def build_chord(root: Pitch, chord_degrees: List[ScaleDegree]) -> Chord:
+    """根据根音与度数列表构建和弦（支持 9/11/13 扩展）。"""
     pitches: List[Pitch] = []
-    for i in intervals:
-        pitches.append(root.transpose(i))
+    for sd in chord_degrees:
+        pitches.append(root.transpose(sd.to_semitones()))
     return Chord(pitches)
 
 
-# 预设和弦构建函数（基于半音间隔）
+# 预设和弦构建函数（基于度数）
 # 基础三和弦
-build_maj = partial(build_chord, intervals=[0, 4, 7])
-build_min = partial(build_chord, intervals=[0, 3, 7])
-build_dim = partial(build_chord, intervals=[0, 3, 6])
-build_aug = partial(build_chord, intervals=[0, 4, 8])
+build_maj = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5)
+])
+build_min = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5)
+])
+build_dim = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5, -1)
+])
+build_aug = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5, 1)
+])
 
 # 挂留和弦
-build_sus2 = partial(build_chord, intervals=[0, 2, 7])
-build_sus4 = partial(build_chord, intervals=[0, 5, 7])
+build_sus2 = partial(build_chord, chord_degrees=[
+    deg(1), deg(2), deg(5)
+])
+build_sus4 = partial(build_chord, chord_degrees=[
+    deg(1), deg(4), deg(5)
+])
 
 # 七和弦
-build_dom7 = partial(build_chord, intervals=[0, 4, 7, 10])  # 属七
-build_maj7 = partial(build_chord, intervals=[0, 4, 7, 11])  # 大七
-build_min7 = partial(build_chord, intervals=[0, 3, 7, 10])  # 小七
-build_half_dim7 = partial(build_chord, intervals=[0, 3, 6, 10])  # 半减七
-build_dim7 = partial(build_chord, intervals=[0, 3, 6, 9])  # 减七
+build_dom7 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7, -1)
+])  # 属七
+build_maj7 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7)
+])  # 大七
+build_min7 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5), deg(7, -1)
+])  # 小七
+build_half_dim7 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5, -1), deg(7, -1)
+])  # 半减七
+build_dim7 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5, -1), deg(7, -2)
+])  # 减七
 
 # 变化七和弦
-build_7b5 = partial(build_chord, intervals=[0, 4, 6, 10])
-build_7sharp5 = partial(build_chord, intervals=[0, 4, 8, 10])
+build_7b5 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5, -1), deg(7, -1)
+])
+build_7sharp5 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5, 1), deg(7, -1)
+])
 
 # 九和弦
-build_maj9 = partial(build_chord, intervals=[0, 4, 7, 11, 14])
-build_min9 = partial(build_chord, intervals=[0, 3, 7, 10, 14])
-build_dom9 = partial(build_chord, intervals=[0, 4, 7, 10, 14])
-build_7b9 = partial(build_chord, intervals=[0, 4, 7, 10, 13])
-build_7sharp9 = partial(build_chord, intervals=[0, 4, 7, 10, 15])
+build_maj9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7), deg(9)
+])
+build_min9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5), deg(7, -1), deg(9)
+])
+build_dom9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7, -1), deg(9)
+])
+build_7b9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7, -1), deg(9, -1)
+])
+build_7sharp9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7, -1), deg(9, 1)
+])
 
 # 十一和弦
-build_maj11 = partial(build_chord, intervals=[0, 4, 7, 11, 14, 17])
-build_min11 = partial(build_chord, intervals=[0, 3, 7, 10, 14, 17])
+build_maj11 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7), deg(9), deg(11)
+])
+build_min11 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5), deg(7, -1), deg(9), deg(11)
+])
 
 # 十三和弦
-build_maj13 = partial(build_chord, intervals=[0, 4, 7, 11, 14, 21])
-build_min13 = partial(build_chord, intervals=[0, 3, 7, 10, 14, 21])
-build_dom13 = partial(build_chord, intervals=[0, 4, 7, 10, 14, 21])
+build_maj13 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7), deg(9), deg(13)
+])
+build_min13 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5), deg(7, -1), deg(9), deg(13)
+])
+build_dom13 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(7, -1), deg(9), deg(13)
+])
 
 # 附加音和弦
-build_add9 = partial(build_chord, intervals=[0, 4, 7, 14])
-build_madd9 = partial(build_chord, intervals=[0, 3, 7, 14])
-build_add11 = partial(build_chord, intervals=[0, 4, 7, 17])
+build_add9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(9)
+])
+build_madd9 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3, -1), deg(5), deg(9)
+])
+build_add11 = partial(build_chord, chord_degrees=[
+    deg(1), deg(3), deg(5), deg(11)
+])
 
 # 级数符号到构建函数的映射（可复用）
 CHORD_BUILDERS: Dict[str, Callable[[Pitch], Chord]] = {
@@ -233,6 +373,7 @@ CHORD_BUILDERS: Dict[str, Callable[[Pitch], Chord]] = {
     'sus2': build_sus2,
     'sus4': build_sus4,
     '7': build_dom7,
+    'dom7': build_dom7,  # 别名：更明确的属七和弦标记
     'maj7': build_maj7,
     'min7': build_min7,
     'm7b5': build_half_dim7,
@@ -255,56 +396,99 @@ CHORD_BUILDERS: Dict[str, Callable[[Pitch], Chord]] = {
 }
 
 
-def parse_progression_token(tok: str) -> Tuple[int, Callable[[Pitch], Chord]]:
-    """解析罗马数字符号（如 I, vi, V7），返回(级数索引, 构建函数)。
+def find_pitch_for_degree(
+    target_degree: ScaleDegree,
+    tonic: Pitch,
+    scale_pitches: ScalePitches,
+    scale_degrees: List[ScaleDegree]
+) -> Pitch:
+    """在音阶中找到对应度数的音高。
     
-    大写表示大三和弦，小写表示小三和弦。
-    修饰符从 CHORD_BUILDERS 表中查找。
+    如果音阶中有该度数，返回对应的音高。
+    如果音阶中没有该度数（如五声音阶中的 II），从主音直接计算。
+    
+    参数：
+        target_degree: 目标度数（如 deg(2) 表示 II 级）
+        tonic: 主音
+        scale_pitches: 音阶中的音高列表
+        scale_degrees: 音阶的度数列表
+    
+    返回：
+        对应的 Pitch 对象
+    """
+    # 尝试在音阶中找到精确匹配
+    for i, deg in enumerate(scale_degrees):
+        if deg == target_degree:
+            return scale_pitches[i]
+    
+    # 如果找不到（比如五声音阶中的 II），从主音直接计算
+    semitones = target_degree.to_semitones()
+    return tonic.transpose(semitones)
+
+
+def parse_progression_token(tok: str) -> Tuple[ScaleDegree, Callable[[Pitch], Chord]]:
+    """解析和弦进行符号。支持数字格式：
+    - 简单数字：1, 6, 4（默认大三和弦 maj）
+    - 带升降号的数字：b6, #4（升降号后跟数字）
+    - 带和弦类型：1maj, 6min, 4maj7, b6dim7, #4sus4
+    - 示例：1-6maj-4-5dim-b3min7-#7aug
     """
     t = tok.strip()
     
-    # 提取罗马数字部分
-    roman = ''.join([c for c in t if c.upper() in 'IVX' or c.lower() in 'ivx'])
+    # 使用正则表达式解析：[升降号]数字[和弦类型]
+    # 例如: b6maj7 -> ('b', '6', 'maj7')
+    match = re.match(r'^([b#♭♯]?)(\d+)(.*)$', t)
+    if not match:
+        raise ValueError(f"无效的和弦符号: {t}")
     
-    # 提取修饰符（除去罗马数字）
-    modifier = t.replace(roman, '').strip()
+    accidental_str, degree_str, modifier = match.groups()
     
-    # 映射罗马数字到级数索引
-    degree_map = {
-        'i': 0, 'ii': 1, 'iii': 2, 'iv': 3, 'v': 4, 'vi': 5, 'vii': 6,
-        'I': 0, 'II': 1, 'III': 2, 'IV': 3, 'V': 4, 'VI': 5, 'VII': 6,
-    }
-    degree = degree_map.get(roman, 0)
-    is_major = roman.isupper() if roman else True
+    # 解析升降号
+    accidental = 0
+    if accidental_str in ('b', '♭'):
+        accidental = -1
+    elif accidental_str in ('#', '♯'):
+        accidental = 1
+    
+    # 解析度数
+    degree_number = int(degree_str)
+    
+    # 创建 ScaleDegree 对象
+    scale_degree = deg(degree_number, accidental)
     
     # 确定构建函数的键
     if not modifier:
-        # 无修饰符：大三或小三
-        builder_key = 'maj' if is_major else 'min'
-    elif modifier == '7':
-        # 特殊情况：7 根据大小写选择 dom7 或 min7
-        builder_key = '7' if is_major else 'min7'
+        # 无修饰符：默认大三和弦
+        builder_key = 'maj'
     else:
-        # 其他修饰符直接查表（maj7, maj9, sus4 等）
+        # 修饰符直接查表（maj7, maj9, min, dim, aug, sus4 等）
         builder_key = modifier
     
     # 从 CHORD_BUILDERS 获取构建函数
-    builder = CHORD_BUILDERS.get(builder_key, build_maj if is_major else build_min)
-    return (degree, builder)
+    if builder_key not in CHORD_BUILDERS:
+        raise ValueError(f"未知的和弦类型: {builder_key}")
+    builder = CHORD_BUILDERS[builder_key]
+    return (scale_degree, builder)
 
 
 def gen_progression(tonic: Pitch, scale: str, progression_name: str) -> Progression:
-    """基于音阶与罗马数字进行生成和弦。"""
-    # 获取基础音阶（一个八度）
-    scale_pitches = get_scale(tonic, scale)
+    """基于音阶与和弦进行生成和弦。
     
-    tokens = progression_name.split('_')
+    进行格式：用 - 分隔的和弦符号，如 "1-6maj-4-5dim-b3"
+    """
+    # 获取基础音阶和度数列表
+    scale_pitches = get_scale(tonic, scale)
+    scale_degrees_list = SCALE_DEGREES[scale]
+    
+    tokens = progression_name.split('-')
     chords: List[Tuple[str, Chord]] = []
     
     for tok in tokens:
-        degree, builder = parse_progression_token(tok)
-        # degree 已经是 0-6，直接用作索引
-        root = scale_pitches[degree]
+        if not tok.strip():
+            continue
+        scale_degree, builder = parse_progression_token(tok)
+        # 使用新逻辑：根据度数找到对应的音高
+        root = find_pitch_for_degree(scale_degree, tonic, scale_pitches, scale_degrees_list)
         chord_pitches = builder(root)
         chords.append((tok, chord_pitches))
     
@@ -341,50 +525,56 @@ def gen_progression_alda(tonic: str, scale: str, progression_name: str, tempo: i
 
 SCALE_PROGRESSIONS: Dict[str, Dict[str, str]] = {
     'major': {
-        'I_vi_IV_V': '流行进行（1-6-4-5）',
-        'I_V_IV_vi': '常见进行（1-5-4-6）',
-        'IV_V_iii_vi_ii_V_I': '帕赫贝尔卡农进行',
-        'I_IV_V_IV': '摇滚进行',
-        'vi_IV_I_V': '抒情进行',
+        '1-6min-4-5': '流行进行（1-6-4-5）',
+        '1-5-4-6min': '常见进行（1-5-4-6）',
+        '4-5-3min-6min-2min-5-1': '帕赫贝尔卡农进行',
+        '1-4-5-4': '摇滚进行',
+        '6min-4-1-5': '抒情进行',
     },
     'minor': {
-        'i_VI_III_VII': '自然小调进行',
-        'i_iv_v_i': '基础小调进行',
-        'i_VI_VII_i': '悲伤进行',
-        'i_III_VII_VI': '史诗进行',
-        'i_iv_VII_III': '哥特进行',
+        '1min-6-3-7': '自然小调进行',
+        '1min-4min-5min-1min': '基础小调进行',
+        '1min-6-7-1min': '悲伤进行',
+        '1min-3-7-6': '史诗进行',
+        '1min-4min-7-3': '哥特进行',
     },
     'dorian': {
-        'i_IV_i_IV': '多利亚摇摆',
-        'i_ii_IV_V': '多利亚经典',
-        'i_IV_VII_i': '多利亚回环',
-        'ii_V_i_IV': '多利亚爵士',
+        '1min-4-1min-4': '多利亚摇摆',
+        '1min-2min-4-5': '多利亚经典',
+        '1min-4-7min-1min': '多利亚回环',
+        '2min-5-1min-4': '多利亚爵士',
     },
     'pentatonic': {
-        'I_vi_ii_I': '宫商角宫',
-        'I_III_IV_I': '五声简约',
-        'I_II_IV_V': '中国风',
-        'I_IV_V_I': '民谣进行',
+        '1-6min-2-1': '宫商角宫',
+        '1-3-4-1': '五声简约',
+        '1-2-4-5': '中国风',
+        '1-4-5-1': '民谣进行',
+    },
+    'minor_pentatonic': {
+        '1min-4min-1min': '布鲁斯摇摆',
+        '1min-5-1min': '布鲁斯基础',
+        '1min-b7-4min-1min': '布鲁斯进行',
+        '4min-1min-5-1min': '摇滚布鲁斯',
     },
     'gypsy_minor': {
-        'i_II_V_i': '吉普赛基础',
-        'i_VII_VI_VII': '吉普赛回旋',
-        'i_II_III_i': '匈牙利式',
-        'VI_VII_i_II': '东欧风情',
+        '1min-2-5-1min': '吉普赛基础',
+        '1min-7-6-7': '吉普赛回旋',
+        '1min-2-3-1min': '匈牙利式',
+        '6-7-1min-2': '东欧风情',
     },
     'gypsy_major': {
-        'I_II_III_I': '双和声行进',
-        'I_bII_VII_I': '中东风格',
-        'I_V_VI_VII': '神秘进行',
+        '1-2-3-1': '双和声行进',
+        '1-b2-7-1': '中东风格',
+        '1-5-6-7': '神秘进行',
     },
 }
 
 # 爵士专用和声进行（适用于多种音阶）
 JAZZ_PROGRESSIONS: Dict[str, str] = {
-    'II_V_I': '经典爵士 Bebop',
-    'VI_ii_V_I': '扩展 Standard',
-    'Imaj7_vi7_ii7_V7': '现代爵士',
-    'ii7_V7_Imaj7_vi7': '转位爵士',
+    '2min-5-1': '经典爵士 Bebop',
+    '6-2min-5-1': '扩展 Standard',
+    '1maj7-6min7-2min7-5dom7': '现代爵士',
+    '2min7-5dom7-1maj7-6min7': '转位爵士',
 }
 
 
