@@ -11,7 +11,7 @@ from fractions import Fraction
 from typing import Dict, List, Tuple, Literal, Optional
 
 from .rhythms import get_rhythm, RhythmPattern
-from .motif import get_motif_weights, MotifWeight, MotifWeights
+from .motif import get_motif_weights, MotifWeight
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ class Style:
     bar_target_beats: Fraction = Fraction(4, 1)
     bass_pattern: Literal['block', 'double', 'arpeggio', 'pendulum', 'waltz_oom_pah', 'minuet_duple'] = 'block'
     blue_notes: bool = False
-    motif_weights: Optional[MotifWeights] = None  # 动机类型权重（None 表示默认均匀）
+    motif_weights: List[MotifWeight] = field(default_factory=list)
     default_key: str = 'C'
     default_scale: str = 'major'
     default_tempo: int = 120
@@ -98,7 +98,7 @@ def _create_default_style() -> Style:
         bar_target_beats=Fraction(4, 1),
         bass_pattern='block',
         blue_notes=False,
-            motif_weights=get_motif_weights('default'),
+        motif_weights=get_motif_weights('default'),
         default_key='C',
         default_scale='major',
         default_tempo=120,
@@ -149,7 +149,7 @@ def _create_jazz_style() -> Style:
         bar_target_beats=Fraction(4, 1),
         bass_pattern='arpeggio',
         blue_notes=True,
-            motif_weights=get_motif_weights('jazz'),
+        motif_weights=get_motif_weights('jazz'),
         default_key='C',
         default_scale='major',
         default_tempo=120,
@@ -199,7 +199,7 @@ def _create_waltz_style() -> Style:
         bar_target_beats=Fraction(3, 1),
         bass_pattern='waltz_oom_pah',
         blue_notes=False,
-            motif_weights=get_motif_weights('waltz'),
+        motif_weights=get_motif_weights('waltz'),
         default_key='C',
         default_scale='major',
         default_tempo=160,
@@ -250,7 +250,7 @@ def _create_minuet_style() -> Style:
         bar_target_beats=Fraction(3, 1),
         bass_pattern='minuet_duple',
         blue_notes=False,
-            motif_weights=get_motif_weights('minuet'),
+        motif_weights=get_motif_weights('minuet'),
         default_key='C',
         default_scale='major',
         default_tempo=160,
@@ -304,7 +304,7 @@ def _create_chinese_style() -> Style:
         bar_target_beats=Fraction(4, 1),
         bass_pattern='arpeggio',
         blue_notes=False,
-            motif_weights=get_motif_weights('chinese'),
+        motif_weights=get_motif_weights('chinese'),
         default_key='C',
         default_scale='pentatonic',
         default_tempo=96,  # 较慢的速度，营造宁静感

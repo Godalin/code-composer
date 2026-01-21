@@ -32,7 +32,7 @@ from .structures import (
     Note,
     note_groups_to_alda,
 )
-from .motif import generate_motif_notes, choose_motif_type, MotifWeights
+from .motif import generate_motif_notes, choose_motif_type, MotifWeight
 from .bass import generate_bass_bar
 from .durations import duration_to_beats, fill_rests
 
@@ -44,7 +44,7 @@ def generate_bar(
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
-    motif_weights: Optional[MotifWeights],
+    motif_weights: List[MotifWeight],
     octave: int,
     use_blue_notes: bool = False,
 ) -> List[List[Note]]:
@@ -75,7 +75,7 @@ def generate_bar(
     num_notes = len(durations)
     
     # 选择动机类型
-    motif_type = choose_motif_type(None, motif_weights)
+    motif_type = choose_motif_type(motif_weights)
     
     # 生成符合和弦的旋律音符
     motif_notes = generate_motif_notes(
@@ -186,7 +186,7 @@ def fill_phrases_content(
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
-    motif_weights: Optional[MotifWeights],
+    motif_weights: List[MotifWeight],
     octave: int,
     use_blue_notes: bool,
     bass_pattern_mode: str,
@@ -250,9 +250,6 @@ def compose(
     parts: str = "both",
 ) -> Tuple[str, dict, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
-    # 验证 Style 对象
-    if style is None:
-        raise ValueError("Style 对象不能为 None")
 
     # 从 Style 对象获取所有配置
     chord_progression_name = style.default_progression

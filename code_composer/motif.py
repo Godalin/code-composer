@@ -7,95 +7,90 @@
 3. 处理八度、音高等细节
 """
 
-from typing import List, Tuple, Optional
+from enum import Enum
+from typing import List, Tuple
 import random
 
 
-MOTIF_TYPES = ['ascending', 'descending', 'arch', 'valley', 'repeat']
+class MotifType(Enum):
+    """律动机类型枚举"""
+    ASCENDING = 'ascending'
+    DESCENDING = 'descending'
+    ARCH = 'arch'
+    VALLEY = 'valley'
+    REPEAT = 'repeat'
 
 # 权重类型定义，与节奏库保持一致使用整数
-MotifWeight = Tuple[str, int]
-MotifWeights = List[MotifWeight]
+MotifWeight = Tuple[int, MotifType]  # (weight, motif_type)
 
 # 动机权重预设，按风格命名，类似节奏库
 MOTIF_WEIGHT_PRESETS = {
     'default': [
-        ('ascending', 25),
-        ('descending', 25),
-        ('arch', 20),
-        ('valley', 20),
-        ('repeat', 10),
+        (25, MotifType.ASCENDING),
+        (25, MotifType.DESCENDING),
+        (20, MotifType.ARCH),
+        (20, MotifType.VALLEY),
+        (10, MotifType.REPEAT),
     ],
     'jazz': [
-        ('ascending', 22),
-        ('descending', 22),
-        ('arch', 18),
-        ('valley', 18),
-        ('repeat', 20),  # 强调动机重复/呼吸
+        (22, MotifType.ASCENDING),
+        (22, MotifType.DESCENDING),
+        (18, MotifType.ARCH),
+        (18, MotifType.VALLEY),
+        (20, MotifType.REPEAT),  # 强调动机重复/呼吸
     ],
     'waltz': [
-        ('ascending', 30),
-        ('descending', 30),
-        ('arch', 20),
-        ('valley', 15),
-        ('repeat', 5),
+        (30, MotifType.ASCENDING),
+        (30, MotifType.DESCENDING),
+        (20, MotifType.ARCH),
+        (15, MotifType.VALLEY),
+        (5, MotifType.REPEAT),
     ],
     'minuet': [
-        ('ascending', 28),
-        ('descending', 28),
-        ('arch', 22),
-        ('valley', 17),
-        ('repeat', 5),
+        (28, MotifType.ASCENDING),
+        (28, MotifType.DESCENDING),
+        (22, MotifType.ARCH),
+        (17, MotifType.VALLEY),
+        (5, MotifType.REPEAT),
     ],
     'chinese': [
-        ('ascending', 50),
-        ('descending', 45),
-        ('arch', 0),
-        ('valley', 0),
-        ('repeat', 5),
+        (50, MotifType.ASCENDING),
+        (45, MotifType.DESCENDING),
+        (0, MotifType.ARCH),
+        (0, MotifType.VALLEY),
+        (5, MotifType.REPEAT),
     ],
 }
 
 
-def choose_motif_type(
-    motif_type: Optional[str],
-    motif_weights: Optional[MotifWeights],
-) -> str:
-    """根据传入值、权重或随机选择动机类型"""
-    # 如果调用方已指定，直接校验后返回
-    if motif_type is not None:
-        if motif_type not in MOTIF_TYPES:
-            raise ValueError(f"未知的动机类型: {motif_type}。可用类型: {MOTIF_TYPES}")
-        return motif_type
-
+def choose_motif_type(motif_weights: List[MotifWeight]) -> MotifType:
+    """根据权重选择动机类型，空列表时均匀选择"""
     # 按权重选择
     if motif_weights:
-        motifs = [m for m, _ in motif_weights]
-        weights = [w for _, w in motif_weights]
+        weights = [w for w, _ in motif_weights]
+        motifs = [m for _, m in motif_weights]
         return random.choices(motifs, weights=weights, k=1)[0]
 
     # 默认均匀随机
-    return random.choice(MOTIF_TYPES)
+    return random.choice(list(MotifType))
 
 
-def get_motif_weights(style_name: str) -> MotifWeights:
+def get_motif_weights(style_name: str) -> List[MotifWeight]:
     """按风格名称返回动机权重预设，若未定义则均匀分布"""
     if style_name in MOTIF_WEIGHT_PRESETS:
         return MOTIF_WEIGHT_PRESETS[style_name]
     # 均匀回退
-    return [(m, 1) for m in MOTIF_TYPES]
+    return [(1, m) for m in MotifType]
 
 
 def generate_motif_notes(
     chord_notes: List[str],
     num_notes: int,
-    motif_type: Optional[str] = None,
+    motif_type: MotifType,
     octave: int = 4,
     use_blue_notes: bool = False,
 ) -> List[Tuple[str, int]]:
     """根据动机类型生成旋律音符序列"""
-    motif_type = choose_motif_type(motif_type, None)
-    
     # 如果启用蓝调音符，扩展可用音符
     available_notes = list(chord_notes)
     if use_blue_notes:
@@ -118,7 +113,7 @@ def generate_motif_notes(
     notes = []
     base_octave = octave
     
-    if motif_type == 'ascending':
+    if motif_type == MotifType.ASCENDING:
         # 上行：逐步使用和弦内的更高音符
         for i in range(num_notes):
             note_idx = (i * 2) % len(available_notes)
@@ -126,7 +121,7 @@ def generate_motif_notes(
             oct = max(2, min(6, oct))  # 限制在有效八度范围
             notes.append((available_notes[note_idx], oct))
     
-    elif motif_type == 'descending':
+    elif motif_type == MotifType.DESCENDING:
         # 下行：逐步使用更低的音
         for i in range(num_notes):
             note_idx = (len(available_notes) - 1 - i) % len(available_notes)
@@ -134,7 +129,7 @@ def generate_motif_notes(
             oct = max(2, min(6, oct))
             notes.append((available_notes[note_idx], oct))
     
-    elif motif_type == 'arch':
+    elif motif_type == MotifType.ARCH:
         # 拱形：先上升后下降
         mid = num_notes // 2
         for i in range(num_notes):
@@ -148,7 +143,7 @@ def generate_motif_notes(
                 oct = base_octave
             notes.append((available_notes[note_idx], oct))
     
-    elif motif_type == 'valley':
+    elif motif_type == MotifType.VALLEY:
         # 谷形：先下降后上升
         mid = num_notes // 2
         for i in range(num_notes):
@@ -162,7 +157,7 @@ def generate_motif_notes(
                 oct = base_octave
             notes.append((available_notes[note_idx], oct))
     
-    elif motif_type == 'repeat':
+    elif motif_type == MotifType.REPEAT:
         # 重复：停留在同一个音
         note = random.choice(available_notes)
         for _ in range(num_notes):
