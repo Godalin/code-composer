@@ -11,31 +11,17 @@ if TYPE_CHECKING:
     from .structures import Note
 
 
-# 基础时值映射：字符串名 -> 拍数
-_DURATION_BEATS = {
-    '1': Fraction(4, 1),   # 全音符
-    '2': Fraction(2, 1),
-    '4': Fraction(1, 1),
-    '8': Fraction(1, 2),
-    '16': Fraction(1, 4),
-    '32': Fraction(1, 8),
-    '6': Fraction(2, 3),   # 三连四分
-    '12': Fraction(1, 3),  # 三连八分
-    # 不规则连音（基于全音符划分）
-    '5': Fraction(4, 5),   # 五连音（5个音=4拍）
-    '7': Fraction(4, 7),   # 七连音（7个音=4拍）
-    '9': Fraction(4, 9),   # 九连音（9个音=4拍）
-    '10': Fraction(2, 5),  # 十连音（10个音=4拍，即2/5拍）
-    '11': Fraction(4, 11), # 十一连音（11个音=4拍）
-}
+
 
 # 休止符贪心顺序（不含全音符，以避免过长停顿）
 _REST_GREEDY_ORDER = ['2', '4', '6', '8', '12', '16', '32']
 
 
-def duration_to_beats(dur: str) -> Fraction:
-    """将持续时间字符串转换为拍数"""
-    return _DURATION_BEATS.get(dur, Fraction(1, 1))
+def duration_to_beats(dur: int) -> Fraction:
+    """将 Alda 时值分母整数转换为拍数（支持任意连音，4/n）"""
+    if isinstance(dur, int) and dur > 0:
+        return Fraction(4, dur)
+    return Fraction(1, 1)
 
 
 def fill_rests(remaining: Fraction) -> List[str]:
@@ -43,7 +29,7 @@ def fill_rests(remaining: Fraction) -> List[str]:
     res = []
     rem = remaining
     for name in _REST_GREEDY_ORDER:
-        beats = _DURATION_BEATS[name]
+        beats = duration_to_beats(int(name))
         while rem >= beats:
             res.append(f"r{name}")
             rem -= beats
@@ -57,14 +43,9 @@ def sum_note_groups_beats(groups: List[List["Note"]]) -> Fraction:
         if not group:
             continue
         n = group[0]
-        beats = _DURATION_BEATS.get(n.duration)
-        if beats is None:
-            try:
-                denom = int(n.duration)
-                if denom != 0:
-                    beats = Fraction(1, denom)
-            except (ValueError, TypeError):
-                beats = None
-        if beats is not None:
+        try:
+            beats = duration_to_beats(n.duration)
             total += beats
+        except Exception:
+            continue
     return total

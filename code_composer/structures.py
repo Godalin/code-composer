@@ -32,11 +32,11 @@ def _convert_note_to_alda(note_name: str) -> str:
 
 @dataclass(frozen=True)
 class Note:
-    """音符：包含音高（音名+八度）、力度（音量）和时值"""
+    """音符：包含音高（音名+八度）、力度（音量）和时值（分母整数）"""
     name: str       # 音名，如 'c', 'd#', 'r'(休止符)
     octave: Optional[int]  # 八度，休止符可为 None
     velocity: int   # 力度（音量），如 75/80/85/95
-    duration: str   # 时值字符串，如 '4','8','16','6' 等
+    duration: int   # 时值分母整数，如 4, 8, 16, 6, 7 等
 
 
 def note_groups_to_alda(groups: List[List["Note"]]) -> str:
@@ -49,7 +49,7 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
     for group in groups:
         group_parts: List[str] = []
         for n in group:
-            alda_dur = n.duration
+            alda_dur = str(n.duration)
             if n.name == 'r':
                 group_parts.append(f"r{alda_dur}")
                 continue
@@ -64,7 +64,7 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
             temp_octave: Optional[int] = None
             chord_velocity: Optional[int] = None
             for n in group:
-                alda_dur = n.duration
+                alda_dur = str(n.duration)
                 if n.name == 'r':
                     chord_notes.append(f"r{alda_dur}")
                     continue

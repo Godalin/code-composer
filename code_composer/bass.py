@@ -22,14 +22,14 @@ from .durations import duration_to_beats, fill_rests
 
 def _finish_bar(
     groups: List[List[Note]],
-    durations: List[str],
+    durations: List[int],
     target: Fraction,
 ) -> List[List[Note]]:
     """补齐小节到目标拍数"""
     total = sum(duration_to_beats(d) for d in durations)
     if total < target:
         for r in fill_rests(target - total):
-            groups.append([Note(name='r', octave=None, velocity=0, duration=r[1:])])
+            groups.append([Note(name='r', octave=None, velocity=0, duration=int(r[1:]))])
     return groups
 
 
@@ -51,15 +51,15 @@ def _bass_block(
     
     if target == Fraction(3, 1):
         # 3/4：二分音符堆叠 + 四分音符单音
-        durations = ['2', '4']
+        durations = [2, 4]
         groups = [
-            [Note(name=n, octave=bass_octave, velocity=85, duration='2') for n in base],
-            [Note(name=base[0], octave=bass_octave, velocity=80, duration='4')],
+            [Note(name=n, octave=bass_octave, velocity=85, duration=2) for n in base],
+            [Note(name=base[0], octave=bass_octave, velocity=80, duration=4)],
         ]
     else:
         # 4/4：全音符堆叠
-        durations = ['1']
-        groups = [[Note(name=n, octave=bass_octave, velocity=85, duration='1') for n in base]]
+        durations = [1]
+        groups = [[Note(name=n, octave=bass_octave, velocity=85, duration=1) for n in base]]
     
     return _finish_bar(groups, durations, target)
 
@@ -76,17 +76,17 @@ def _bass_double(
     
     if target == Fraction(3, 1):
         # 3/4：二分根音 + 四分五音
-        durations = ['2', '4']
+        durations = [2, 4]
         groups = [
-            [Note(name=base[0], octave=bass_octave, velocity=85, duration='2')],
-            [Note(name=fifth, octave=bass_octave, velocity=80, duration='4')],
+            [Note(name=base[0], octave=bass_octave, velocity=85, duration=2)],
+            [Note(name=fifth, octave=bass_octave, velocity=80, duration=4)],
         ]
     else:
         # 4/4：两个二分音符
-        durations = ['2', '2']
+        durations = [2, 2]
         groups = [
-            [Note(name=base[0], octave=bass_octave, velocity=85, duration='2')],
-            [Note(name=fifth, octave=bass_octave, velocity=80, duration='2')],
+            [Note(name=base[0], octave=bass_octave, velocity=85, duration=2)],
+            [Note(name=fifth, octave=bass_octave, velocity=80, duration=2)],
         ]
     
     return _finish_bar(groups, durations, target)
@@ -105,9 +105,9 @@ def _bass_arpeggio(
     count = 6 if target == Fraction(3, 1) else 8
     seq = _take(4, [base[0], base[1] if len(base) > 1 else base[0], 
                      base[2] if len(base) > 2 else base[0], base[0]])
-    durations = ['8'] * count
+    durations = [8] * count
     vols = volume_map[:count]
-    groups = [[Note(name=seq[i % 4], octave=bass_octave, velocity=vols[i], duration='8')] 
+    groups = [[Note(name=seq[i % 4], octave=bass_octave, velocity=vols[i], duration=8)] 
               for i in range(count)]
     
     return _finish_bar(groups, durations, target)
@@ -126,9 +126,9 @@ def _bass_pendulum(
     count = 6 if target == Fraction(3, 1) else 8
     seq = _take(4, [base[0], base[1] if len(base) > 1 else base[0],
                      base[2] if len(base) > 2 else base[0], base[1] if len(base) > 1 else base[0]])
-    durations = ['8'] * count
+    durations = [8] * count
     vols = volume_map[:count]
-    groups = [[Note(name=seq[i % 4], octave=bass_octave, velocity=vols[i], duration='8')] 
+    groups = [[Note(name=seq[i % 4], octave=bass_octave, velocity=vols[i], duration=8)] 
               for i in range(count)]
     
     return _finish_bar(groups, durations, target)
@@ -145,7 +145,7 @@ def _bass_waltz_oom_pah(
     
     notes = [base[0], base[1] if len(base) > 1 else base[0], 
              base[2] if len(base) > 2 else base[0]]
-    durations = ['4', '4', '4']
+    durations = [4, 4, 4]
     vols = [90, 75, 75]
     groups = [Note(name=notes[i], octave=bass_octave, velocity=vols[i], duration=durations[i])
               for i in range(3)]
@@ -165,11 +165,11 @@ def _bass_minuet_duple(
     
     notes = _take(3, [base[0], base[1] if len(base) > 1 else base[0],
                        base[2] if len(base) > 2 else base[0]])
-    durations = ['8'] * 6
+    durations = [8] * 6
     groups = []
     for i in range(6):
         vol = 90 if i % 3 == 0 else 75
-        groups.append([Note(name=notes[i % 3], octave=bass_octave, velocity=vol, duration='8')])
+        groups.append([Note(name=notes[i % 3], octave=bass_octave, velocity=vol, duration=8)])
     
     return _finish_bar(groups, durations, target)
 
@@ -207,7 +207,7 @@ def generate_bass_bar(
     bass_octave = octave - 1
     
     if not chord_notes:
-        return [[Note(name='r', octave=None, velocity=0, duration='1')]]
+        return [[Note(name='r', octave=None, velocity=0, duration=1)]]
     
     # 查找对应的低音生成函数
     bass_gen_func = BASS_PATTERNS.get(bass_pattern_mode)
