@@ -228,13 +228,13 @@ def gen_scale_sequence(tonic: str, scale: str) -> ScalePitches:
     base_scale = get_scale(tonic_pitch, scale_name)
     upper_scale = [p.transpose(12) for p in base_scale]
     
-    # 拼接：o4 上行一遍 + o5 上行一遍 + o5 下行（去掉顶点）+ o4 下行（去掉末尾避免重复顶点）
+    # 拼接：o4 上行一遍 + o5 上行一遍 + 顶点 + o5 下行 + o4 下行 + 回到主音
     sequence: List[Pitch] = []
     sequence.extend(base_scale)
     sequence.extend(upper_scale)
     sequence.extend([tonic_pitch.transpose(24)] * 2)
-    sequence.extend(reversed(upper_scale[:-1]))
-    sequence.extend(reversed(base_scale[:-1]))
+    sequence.extend(reversed(upper_scale))
+    sequence.extend(reversed(base_scale))
     
     return ScalePitches(sequence)
 
