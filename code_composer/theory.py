@@ -3,62 +3,69 @@
 
 提供：
 - 音名与半音映射
+- Pitch 类型表示音高（音名 + 八度）
 - 常见音阶（大调、小调、Dorian、多种五声音阶、Gypsy）生成
 - 根据音阶叠置三度生成和弦（triad / seventh）
 - 依据罗马数字进程名称生成指定调性的和声进行
 """
 
+from dataclasses import dataclass
 from typing import List, Tuple
 
 
-# 统一使用小写加升号的音名集合（与 Alda 兼容）
+@dataclass(frozen=True)
+class Pitch:
+    """音高：音名与八度的不可变对象，使用科学记号法（C4=中央C）。"""
+    name: str
+    octave: int
+    
+    def __post_init__(self):
+        object.__setattr__(self, 'name', Pitch.normalize(self.name))
+    
+    def __str__(self) -> str:
+        """科学记号表示（如 'c4', 'f♯5'）"""
+        return f"{self.name.replace('#', '♯')}{self.octave}"
+    
+    @staticmethod
+    def normalize(note: str) -> str:
+        """规范化音名，接受升号与常见降号（转为升号）。"""
+        n = note.strip().lower()
+        if n in FLAT_TO_SHARP:
+            n = FLAT_TO_SHARP[n]
+        elif n in ENHARMONIC:
+            n = ENHARMONIC[n]
+        if n not in NOTES_SHARP:
+            raise ValueError(f"无效音名: {note}")
+        return n
+    
+    @staticmethod
+    def note_index(note: str) -> int:
+        """获取音名在 NOTES_SHARP 中的索引。"""
+        return NOTES_SHARP.index(Pitch.normalize(note))
+    
+    def transpose(self, semitones: int) -> 'Pitch':
+        """转置指定半音数。例：Pitch('b', 4).transpose(1) → Pitch('c', 5)。"""
+        current_idx = Pitch.note_index(self.name)
+        new_idx = current_idx + semitones
+        octave_shift = new_idx // 12
+        note_idx = new_idx % 12
+        return Pitch(NOTES_SHARP[note_idx], self.octave + octave_shift)
+
+
+# 音名集合（小写 + 升号，Alda 兼容）
 NOTES_SHARP: List[str] = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-
-FLAT_TO_SHARP = {
-    'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'bb': 'a#',
-    'cb': 'b', 'fb': 'e', 'eb': 'd#',
-}
-
-ENHARMONIC = {
-    'b#': 'c', 'e#': 'f', 'a#': 'a#', 'd#': 'd#', 'g#': 'g#', 'c#': 'c#', 'f#': 'f#'
-}
-
-
-def normalize_note(note: str) -> str:
-    n = note.strip().lower()
-    if n in ENHARMONIC:
-        n = ENHARMONIC[n]
-    if 'b' in n and len(n) == 2 and n.endswith('b'):
-        n = FLAT_TO_SHARP.get(n, n)
-    if n not in NOTES_SHARP:
-        # 回退：仅取首字母（如传入 C 或 c），其余忽略
-        n = n[0]
-        if n not in [x[0] for x in NOTES_SHARP]:
-            raise ValueError(f"未知音名: {note}")
-        # 映射到自然音
-        mapping = {'a': 'a', 'b': 'b', 'c': 'c', 'd': 'd', 'e': 'e', 'f': 'f', 'g': 'g'}
-        n = mapping[n]
-    return n
-
-
-def index_of(note: str) -> int:
-    return NOTES_SHARP.index(normalize_note(note))
-
-
-def transpose(note: str, semitones: int) -> str:
-    idx = index_of(note)
-    return NOTES_SHARP[(idx + semitones) % 12]
+FLAT_TO_SHARP = {'bb': 'a#', 'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'cb': 'b', 'fb': 'e'}
+ENHARMONIC = {'b#': 'c', 'e#': 'f'}
 
 
 def build_scale(tonic: str, intervals: List[int]) -> List[str]:
-    """按照半音间隔生成音阶。intervals 为各级之间的半音距离。"""
-    t = normalize_note(tonic)
+    """按间隔生成音阶内的音名序列。"""
+    t = Pitch.normalize(tonic)
     notes = [t]
-    idx = index_of(t)
+    idx = Pitch.note_index(t)
     for step in intervals:
         idx = (idx + step) % 12
         notes.append(NOTES_SHARP[idx])
-    # 对于五声音阶等，最后一个音可能回到主音，保留以利于叠置计算
     return notes
 
 
@@ -187,3 +194,76 @@ def generate_progression(tonic: str, scale: str, progression_name: str) -> List[
         chord_notes = build_chord(scale_notes, degree, seventh=seventh)
         chords.append((tok, chord_notes))
     return chords
+
+
+def _note_to_alda(note_name: str) -> str:
+    """将音符名称转换为 Alda 格式（# → +，b → -）"""
+    if note_name == 'b':
+        return 'b'
+    result = note_name.replace('#', '+')
+    if len(result) > 1 and result.endswith('b'):
+        result = result[:-1] + '-'
+    return result
+
+
+def generate_scale_sequence(tonic: str, scale: str) -> List[Pitch]:
+    """
+    生成测试音阶序列：上行两个八度再下行。
+    返回 Pitch 对象列表，可直接用于 Alda 渲染。
+    
+    按照国际标准，C 是每个八度的起始：
+    - C4 → B4 是八度 4
+    - C5 → B5 是八度 5
+    
+    算法：
+    1. 获取音阶的半音间隔
+    2. 从起始音开始，按照间隔依次往前走半音
+    3. 使用 transpose_pitch 自动处理八度切换
+    """
+    scale_name = scale.lower()
+    if scale_name not in SCALE_INTERVALS:
+        raise ValueError(f"未知音阶: {scale_name}")
+    
+    intervals = SCALE_INTERVALS[scale_name]
+    tonic_normalized = Pitch.normalize(tonic)
+    
+    # 从起始音开始：tonic o4
+    current_pitch = Pitch(tonic_normalized, 4)
+    sequence = [current_pitch]
+    
+    # 上行两个八度（每个音阶循环一遍）
+    for cycle in range(2):
+        for interval in intervals:
+            current_pitch = current_pitch.transpose(interval)
+            sequence.append(current_pitch)
+    
+    # 顶点是上行序列的最后一个音
+    # 下行序列：从倒数第二个开始往回走（不重复顶点）
+    descend = []
+    for i in range(len(sequence) - 2, -1, -1):
+        descend.append(sequence[i])
+    
+    return sequence + descend
+
+
+def generate_scale_alda(tonic: str, scale: str, tempo: int = 120) -> str:
+    """
+    生成音阶的 Alda 乐谱代码（琴键乐器，上行下行）。
+    
+    示例：piano: (tempo 120) o4 c2 d2 e2 o5 f2 g2 c2 d2 e2 o6 f1 ...
+    """
+    scale_seq = generate_scale_sequence(tonic, scale)
+    
+    # 转换为 Alda 片段（仅在八度变化时标记 oN）
+    notes = []
+    current_oct = None
+    for pitch in scale_seq:
+        if pitch.octave != current_oct:
+            notes.append(f"o{pitch.octave}")
+            current_oct = pitch.octave
+        notes.append(f"{_note_to_alda(pitch.name)}2")
+    
+    # 最后回到起点（全音符强调结束）
+    notes.append(f"{_note_to_alda(scale_seq[0].name)}1")
+    
+    return f'piano: (tempo {tempo}) {" ".join(notes)}'

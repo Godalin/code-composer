@@ -13,7 +13,7 @@ from .composer import compose
 from .frontend import compile_c_code
 from .styles import create_style_with_overrides
 from .exporter import export_to_midi, midi_to_mp3
-from .structures import print_composition_tree, _convert_note_to_alda
+from .structures import print_composition_tree
 
 
 def create_parser():
@@ -342,44 +342,11 @@ def main():
                 print(f"🎵 音阶测试模式")
                 print(f"   调性: {args.key}, 音阶: {args.scale}")
             
-            from .theory import get_scale
+            from .theory import generate_scale_alda
+            from .exporter import play_alda_code
             
-            # 获取音阶音符
-            scale_notes = get_scale(args.key, args.scale)
-            # 去掉最后重复的主音
-            if scale_notes[-1] == scale_notes[0]:
-                scale_notes = scale_notes[:-1]
-            
-            # 生成上行序列：o4 g a b → o5 d e g a b → o6 d
-            ascend = [
-                (scale_notes[0], 4),  # g
-                (scale_notes[1], 4),  # a
-                (scale_notes[2], 4),  # b
-                (scale_notes[3], 5),  # d
-                (scale_notes[4], 5),  # e
-                (scale_notes[0], 5),  # g
-                (scale_notes[1], 5),  # a
-                (scale_notes[2], 5),  # b
-                (scale_notes[3], 6),  # d (顶点)
-            ]
-
-            # 下行序列：镜像上行（不重复顶点）
-            descend = list(reversed(ascend[:-1]))
-
-            # 合并并转换为 Alda 片段（仅在八度变化时标记 oN）
-            full_seq = ascend + descend
-            notes = []
-            current_oct = None
-            for note_name, octv in full_seq:
-                if octv != current_oct:
-                    notes.append(f"o{octv}")
-                    current_oct = octv
-                notes.append(f"{_convert_note_to_alda(note_name)}2")
-
-            # 最后回到起点（全音符强调结束）
-            notes.append(f"{_convert_note_to_alda(scale_notes[0])}1")
-            
-            alda_code = f'piano: (tempo {args.tempo}) {" ".join(notes)}'
+            # 生成 Alda 代码
+            alda_code = generate_scale_alda(args.key, args.scale, args.tempo)
             
             # 如果用户指定了输出文件，保存
             if original_output:
@@ -390,18 +357,9 @@ def main():
             elif args.verbose:
                 print(f"✓ 音阶代码已生成")
             
-            # 直接播放
+            # 播放
             if not args.no_play:
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.alda', delete=False) as f:
-                    f.write(alda_code)
-                    temp_alda = f.name
-                
-                try:
-                    from .exporter import play_alda_file
-                    play_alda_file(temp_alda)
-                finally:
-                    if os.path.exists(temp_alda):
-                        os.remove(temp_alda)
+                play_alda_code(alda_code)
             
             return
         

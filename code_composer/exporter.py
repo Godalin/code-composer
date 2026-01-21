@@ -34,6 +34,25 @@ def play_alda_file(file_path: str) -> bool:
     except subprocess.TimeoutExpired:
         print("✗ 播放超时")
         return False
+
+
+def play_alda_code(alda_code: str) -> bool:
+    """直接播放 Alda 代码，无需文件"""
+    try:
+        subprocess.run(
+            ['alda', 'play', '-c', alda_code],
+            check=True,
+            capture_output=True,
+            timeout=300
+        )
+        return True
+    except FileNotFoundError:
+        print("✗ 未找到 alda 命令。请确保 alda 已安装。")
+        print("   安装指南: https://alda.io/setup/")
+        return False
+    except subprocess.TimeoutExpired:
+        print("✗ 播放超时")
+        return False
     except Exception as e:
         print(f"✗ 播放出错: {e}")
         return False
