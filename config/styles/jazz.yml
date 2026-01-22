@@ -6,14 +6,14 @@ description: "复杂节奏和即兴感的爵士风格"
 
 # 基础参数
 time_signature: 4/4
-bass_pattern: arpeggio
+bass_pattern: block
 blue_notes: true
 
 # 默认值
 defaults:
-  key: C
+  key: G
   scale: dorian
-  tempo: 140
+  tempo: 130
   octave: 4
   progression: 2min-5-1
 
@@ -26,16 +26,12 @@ progression_sources:
 
 # 节奏权重（强调三连音和复杂节奏）
 rhythm_weights:
-  - { pattern: 6x6, weight: 9 }
-  - { pattern: 12x12, weight: 9 }
-  - { pattern: 6x3_4x2, weight: 8 }
-  - { pattern: 4_6x3_4, weight: 8 }
-  - { pattern: 6x6, weight: 9 }
-  - { pattern: 12x12, weight: 9 }
-  - { pattern: 6x3_4x2, weight: 8 }
-  - { pattern: 4_6x3_4, weight: 8 }
-  - { pattern: 6x6, weight: 9 }
-  - { pattern: 12x12, weight: 9 }
+  - { pattern: 6/12x4, weight: 500 }
+  - { pattern: 12/6x4, weight: 100 }
+  - { pattern: 6x6, weight: 70 }
+  - { pattern: 12x12, weight: 70 }
+  - { pattern: 6x3_4x2, weight: 50 }
+  - { pattern: 4_6x3_4, weight: 50 }
   - { pattern: synco_8_4_8_4_4, weight: 5 }
   - { pattern: synco_4_8_4_8_4, weight: 5 }
   - { pattern: synco_8_8_4_8_8_4, weight: 5 }

@@ -35,6 +35,6 @@ motif_weights:
   - { type: ascending, weight: 28 }
   - { type: descending, weight: 28 }
   - { type: arch, weight: 22 }
-  - { type: valley, weight: 15 }
-  - { type: repeat, weight: 5 }
+  - { type: valley, weight: 22 }
+  - { type: repeat, weight: 2 }
   - { type: random, weight: 2 }

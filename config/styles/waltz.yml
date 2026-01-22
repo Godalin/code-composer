@@ -13,7 +13,7 @@ blue_notes: false
 defaults:
   key: C
   scale: major
-  tempo: 150
+  tempo: 100
   octave: 4
   progression: 1-4-5-4
 
@@ -26,11 +26,11 @@ progression_sources:
 rhythm_weights:
   - { pattern: even_3, weight: 5 }
   - { pattern: 2_4, weight: 3 }
+  - { pattern: 4_2, weight: 3 }
   - { pattern: 4_8_8_4, weight: 6 }
-  - { pattern: 8_8_4_4, weight: 4 }
+  - { pattern: 8_8_4_4, weight: 6 }
   - { pattern: synco_8_4_8_4, weight: 4 }
-  - { pattern: 4_2, weight: 2 }
-  - { pattern: 8x6, weight: 3 }
+  - { pattern: 8x6, weight: 4 }
 
 # 动机权重（优雅流畅）
 motif_weights:
