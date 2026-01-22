@@ -7,5 +7,6 @@ pkgs.mkShell {
     fluidsynth
     timidity
     alda
+    uv
   ];
 }
