@@ -122,8 +122,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "动机类型",
-          "enum": ["ascending", "descending", "arch", "valley", "repeat", "random"]
+          "description": "动机类型"
         },
         "weight": {
           "type": "integer",
