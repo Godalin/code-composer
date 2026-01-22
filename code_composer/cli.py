@@ -195,7 +195,13 @@ def create_parser():
         action='store_true',
         help='生成后不自动播放音乐'
     )
-    
+
+    parser.add_argument(
+        '--ignore-bad',
+        action='store_true',
+        help='忽略不和谐和弦变体'
+    )
+
     parser.add_argument(
         '--version',
         action='version',
@@ -428,6 +434,7 @@ def main():
                 tokens=tokens,
                 seed=args.seed,
                 parts=args.parts,
+                ignore_bad=args.ignore_bad,
             )
             
             # 保存 Alda 文件

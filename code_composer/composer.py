@@ -192,6 +192,7 @@ def fill_phrases_content(
     bass_pattern_mode: str,
     scale_pitches: ScalePitches,
     supplement_pitches: List[Pitch],
+    ignore_bad: bool,
 ) -> List[Phrase]:
     """填充所有小节的旋律和伴奏内容"""
     phrases_with_content = []
@@ -219,7 +220,7 @@ def fill_phrases_content(
 
                 # 生成小节伴奏
                 bass_text = generate_bar_bass(
-                    chord_var,
+                    chord_var if not ignore_bad else span.chord,
                     bass_pattern_mode,
                     bar_target_beats,
                     octave,
@@ -253,6 +254,7 @@ def compose(
     bars_per_token: int = 1,
     seed: Optional[int] = 42,
     parts: str = "both",
+    ignore_bad: bool = True,
 ) -> Tuple[str, dict, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
 
@@ -336,6 +338,7 @@ def compose(
         bass_pattern,
         scale_pitches,
         supplement_pitches,
+        ignore_bad,
     )
 
     # 创建 Composition 对象

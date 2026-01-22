@@ -263,7 +263,9 @@ class CLexer(BaseLexer):
             else:
                 token_type = TokenType.IDENTIFIER
             
-            tokens.append(Token(token_type, text, 0, 0))
+            # 在这儿随机插入坏 Token
+            tokens.append(Token(token_type, text, 0, 0,
+                random.choices([0, -1, -2], [6, 2, 2], k=1)[0]))
         
         return tokens
 
