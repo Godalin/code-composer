@@ -1,0 +1,48 @@
+# 新疆风味音乐风格配置
+
+name: xinjiang
+
+display_name: "新疆风味"
+description: "融合新疆民族音乐特色，采用多样节奏与装饰音，强调旋律律动与异域色彩。"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: arpeggio
+blue_notes: false
+
+# 默认值
+defaults:
+  key: D
+  scale: xinjiang_minor  # 可自定义或用harmonic_minor/major
+  tempo: 110
+  octave: 4
+  progression: 1-4-5-1
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/xinjiang.yml
+  - progressions/minor.yml
+
+# 节奏权重 - 强调律动感与装饰性
+rhythm_weights:
+  # 长音与律动结合
+  - { pattern: whole, weight: 2 }
+  - { pattern: two_half, weight: 3 }
+  - { pattern: half_2, weight: 2 }
+  - { pattern: 4_2_4, weight: 3 }
+  # 四分音符基础
+  - { pattern: even_4, weight: 3 }
+  - { pattern: 4_4_2, weight: 2 }
+  # 八分音符与切分
+  - { pattern: 4_8_8_4_4, weight: 4 }
+  - { pattern: 8_8_4x3, weight: 3 }
+  - { pattern: 8x4_4x2, weight: 3 }
+  - { pattern: 4x2_8x4, weight: 2 }
+  # 装饰性节奏
+  - { pattern: 8_8_4_8_8_4, weight: 3 }
+
+# 动机权重 - 强调上行、下行与波浪型旋律
+motif_weights:
+  - { type: ascending, weight: 40 }
+  - { type: descending, weight: 35 }
+  - { type: arch, weight: 25 }

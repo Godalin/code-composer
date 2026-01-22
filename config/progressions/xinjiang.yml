@@ -1,0 +1,18 @@
+# 新疆风味和弦进行库
+
+progressions:
+  1-4-5-1:
+    name: "新疆基础进行"
+    description: "新疆民歌常见的I-IV-V-I进行，适合大调/小调/民族调式"
+
+  1min-4min-5-1min:
+    name: "新疆小调进行"
+    description: "新疆风味小调常用进行，适合表现抒情与异域色彩"
+
+  1-7-6min-5:
+    name: "新疆下行进行"
+    description: "下行低音线，适合新疆叙事性旋律"
+
+  1-2-5-1:
+    name: "新疆民族进行"
+    description: "融合民族调式的I-II-V-I进行，带有异域风情"
