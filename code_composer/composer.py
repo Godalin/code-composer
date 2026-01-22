@@ -255,6 +255,7 @@ def compose(
     seed: Optional[int] = 42,
     parts: str = "both",
     ignore_bad: bool = True,
+    instrument: str = "piano",
 ) -> Tuple[str, dict, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
 
@@ -364,7 +365,7 @@ def compose(
         alda_parts.append("  V2: " + "\n  V2: ".join(all_bass_bars))
 
     alda_score = (
-        f"piano:\n"
+        f"{instrument}:\n"
         f"  (tempo {tempo})\n"
         + "\n".join(alda_parts)
     )

@@ -203,6 +203,13 @@ def create_parser():
     )
 
     parser.add_argument(
+        '--instrument',
+        type=str,
+        default='piano',
+        help='使用的乐器'
+    )
+
+    parser.add_argument(
         '--version',
         action='version',
         version='%(prog)s 0.1.0'
@@ -435,6 +442,7 @@ def main():
                 seed=args.seed,
                 parts=args.parts,
                 ignore_bad=args.ignore_bad,
+                instrument=args.instrument,
             )
             
             # 保存 Alda 文件
@@ -489,6 +497,8 @@ def main():
                 tokens=tokens,
                 seed=args.seed,
                 parts=args.parts,
+                ignore_bad=args.ignore_bad,
+                instrument=args.instrument,
             )
             
             # 保存 Alda 文件
