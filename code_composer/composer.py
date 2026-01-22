@@ -15,7 +15,7 @@
 import random
 from dataclasses import replace
 from fractions import Fraction
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 
 from .frontend import Token, TokenType
 from .styles import Style
@@ -154,8 +154,7 @@ def build_phrases_skeleton(
                     chord_idx=chord_idx,
                     chord_name=chord_name,
                     chord=chord_pitches,
-                    melody=[],
-                    bass=[],
+                    parts={},
                 )
                 bars_list.append(bar)
                 global_bar_idx += 1
@@ -219,15 +218,28 @@ def fill_phrases_content(
                 )
 
                 # 生成小节伴奏
-                bass_text = generate_bar_bass(
+                bass_notes = generate_bar_bass(
                     chord_var if not ignore_bad else span.chord,
                     bass_pattern_mode,
                     bar_target_beats,
                     octave,
                 )
 
+                string_notes = generate_bar_bass(
+                    span.chord,
+                    "block",
+                    bar_target_beats,
+                    octave,
+                )
+
                 # 使用不可变操作创建更新的 Bar
-                bar_with_content = replace(bar, melody=melody_notes, bass=bass_text)
+                bar_with_content = replace(bar,
+                    parts = {
+                        "piano": [bass_notes],
+                        # "piano": [melody_notes, bass_notes],
+                        # "violin": [string_notes],
+                        "guitar": [melody_notes],
+                    })
                 bars_with_content.append(bar_with_content)
 
             # 使用新的 bars 创建更新的 ChordSpan
@@ -354,21 +366,20 @@ def compose(
 
     # 第三阶段：汇总 Alda 乐谱
     all_bars = comp.get_all_bars()
-    all_melody_bars = (note_groups_to_alda(bar.melody) for bar in all_bars)
-    all_bass_bars = (note_groups_to_alda(bar.bass) for bar in all_bars)
+    insts = all_bars[0].parts.keys()
+    insts_parts: Dict[str, List[str]] = {}
+    for inst in insts:
+        inst_vs: List[str] = []
+        for v in range(len(all_bars[0].parts[inst])):
+            inst_all_bars = (note_groups_to_alda(bar.parts[inst][v]) for bar in all_bars)
+            inst_vs.append(f"  V{v+1}: " + f"\n  V{v+1}: ".join(inst_all_bars))
+        insts_parts[inst] = inst_vs
 
-    # 根据 parts 参数决定包含的部分
-    alda_parts = []
-    if parts in ("melody", "both"):
-        alda_parts.append("  V1: " + "\n  V1: ".join(all_melody_bars))
-    if parts in ("accompaniment", "both"):
-        alda_parts.append("  V2: " + "\n  V2: ".join(all_bass_bars))
-
-    alda_score = (
-        f"{instrument}:\n"
+    alda_score: str = "\n\n".join((
+        f"{inst}:\n"
         f"  (tempo {tempo})\n"
-        + "\n".join(alda_parts)
-    )
+        + "\n".join(insts_parts[inst])
+    for inst in insts))
 
     # 打印调试信息
     print(comp.debug_summary())

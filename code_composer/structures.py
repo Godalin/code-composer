@@ -11,7 +11,7 @@
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Any
+from typing import Generator, List, Optional, Any, Dict
 
 from .durations import sum_note_groups_beats
 from .theory import Chord
@@ -114,6 +114,9 @@ def note_groups_to_alda_debug(groups: List[List["Note"]]) -> str:
     return " ".join(parts)
 
 
+Parts = Dict[str, List[List[List[Note]]]]
+
+
 @dataclass(frozen=True)
 class Bar:
     """小节：音乐的最小单位"""
@@ -122,8 +125,29 @@ class Bar:
     chord_idx: int  # 在乐句内的和声索引（0-based）
     chord_name: str  # 和弦名称（如 'C', 'Am'）
     chord: Chord  # 当前和弦的 Pitch 对象列表
-    melody: List[List[Note]]  # 旋律：并行音符组的序列（支持双音等多声部）
-    bass: List[List[Note]]  # 伴奏：并行音符组的序列（每组同时发声）
+    parts: Parts
+    
+    @property
+    def instruments(self) -> List[str]:
+        return list(self.parts.keys())
+    
+    @property
+    def tracks(self) -> List[List[List[Note]]]:
+        def gen() -> Generator[List[List[Note]], Any, None]:
+            for inst in self.instruments:
+                for track in self.parts[inst]:
+                    yield track
+        return list(gen())
+    
+    # 旋律：并行音符组的序列（支持双音等多声部）
+    @property
+    def melody(self) -> List[List[Note]]:
+        return self.tracks[0]
+    
+    # 伴奏：并行音符组的序列（每组同时发声）
+    @property
+    def bass(self) -> List[List[Note]]:
+        return self.tracks[1]
 
     def to_alda(self) -> str:
         """生成该小节的 Alda 代码"""
