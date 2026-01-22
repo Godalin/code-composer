@@ -20,7 +20,16 @@ from typing import List, Optional, Tuple
 from .frontend import Token, TokenType
 from .styles import Style
 from .rhythms import RhythmPattern
-from .theory import gen_progression, get_available_progressions, get_scale, Pitch, Progression, Chord, ScalePitches
+from .theory import (
+    Pitch,
+    Progression,
+    Chord,
+    ScalePitches,
+    gen_progression,
+    get_available_progressions,
+    get_scale,
+    vary_chord,
+)
 from .structures import (
     Bar,
     ChordSpan,
@@ -30,21 +39,21 @@ from .structures import (
     note_groups_to_alda,
 )
 from .motif import create_motif_generator, choose_motif_type, MotifWeight
-from .bass import generate_bass_bar
+from .bass import generate_bar_bass
 from .durations import duration_to_beats, fill_rests
 
 
 # ===== 小节生成函数 =====
 
-def generate_bar(
+def generate_bar_melody(
     chord: Chord,
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
     motif_weights: List[MotifWeight],
     octave: int,
-    use_blue_notes: bool,
     scale_pitches: ScalePitches,
+    supplement_pitches: List[Pitch],
 ) -> List[List[Note]]:
     """为单个小节生成旋律音符组序列。
 
@@ -173,15 +182,16 @@ def build_phrases_skeleton(
 # ===== 乐句内容填充函数 =====
 
 def fill_phrases_content(
+    tokens: List[Token],
     phrases: List[Phrase],
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
     motif_weights: List[MotifWeight],
     octave: int,
-    use_blue_notes: bool,
     bass_pattern_mode: str,
     scale_pitches: ScalePitches,
+    supplement_pitches: List[Pitch],
 ) -> List[Phrase]:
     """填充所有小节的旋律和伴奏内容"""
     phrases_with_content = []
@@ -193,21 +203,23 @@ def fill_phrases_content(
             bars_with_content = []
 
             for bar in span.bars:
-                # 生成这个小节的旋律
-                melody_notes = generate_bar(
-                    span.chord,  # 传递 Chord (List[Pitch])
+                chord_var = vary_chord(span.chord, tokens[span.token_idx].level)
+
+                # 生成小节旋律
+                melody_notes = generate_bar_melody(
+                    span.chord,
                     rhythm_patterns,
                     rhythm_weights,
                     bar_target_beats,
                     motif_weights,
                     octave,
-                    use_blue_notes,
-                    scale_pitches,  # 传递音阶音符
+                    scale_pitches,
+                    supplement_pitches,
                 )
-                
-                # 生成伴奏
-                bass_text = generate_bass_bar(
-                    span.chord,
+
+                # 生成小节伴奏
+                bass_text = generate_bar_bass(
+                    chord_var,
                     bass_pattern_mode,
                     bar_target_beats,
                     octave,
@@ -276,15 +288,18 @@ def compose(
     # 生成音阶音符列表（用于旋律生成）
     scale_pitches = get_scale(tonic_pitch, scale)
 
+    # TODO: get supplement Pitches
+    supplement_pitches = []
+
     # 设置随机种子
     if seed is not None:
         random.seed(seed)
 
     # 过滤掉 EOF token
-    relevant_tokens = tuple(t for t in tokens if t.type != TokenType.EOF)
+    tokens = [t for t in tokens if t.type != TokenType.EOF]
 
-    if not relevant_tokens:
-        # token 为空时的默认乐谱
+    # token 为空时的默认乐谱
+    if not tokens:
         empty_comp = Composition(
             tempo=tempo,
             style=style.name,
@@ -293,7 +308,7 @@ def compose(
         )
         return "piano:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
 
-    num_tokens = len(relevant_tokens)
+    num_tokens = len(tokens)
     num_token_groups = (num_tokens + bars_per_token - 1) // bars_per_token
 
     # 计算需要的乐句数
@@ -311,15 +326,16 @@ def compose(
 
     # 第二阶段：填充旋律和伴奏
     phrases_with_content = fill_phrases_content(
+        tokens,
         phrases,
         rhythm_patterns,
         rhythm_weights,
         bar_target_beats,
         motif_weights,
         octave,
-        use_blue_notes,
         bass_pattern,
         scale_pitches,
+        supplement_pitches,
     )
 
     # 创建 Composition 对象
@@ -328,14 +344,14 @@ def compose(
         style=style.name,
         key=key,
         scale=scale,
-        phrases=list(phrases_with_content),
-        tokens=list(relevant_tokens),
+        phrases=phrases_with_content,
+        tokens=tokens,
     )
 
     # 第三阶段：汇总 Alda 乐谱
     all_bars = comp.get_all_bars()
-    all_melody_bars = tuple(note_groups_to_alda(bar.melody) for bar in all_bars)
-    all_bass_bars = tuple(note_groups_to_alda(bar.bass) for bar in all_bars)
+    all_melody_bars = (note_groups_to_alda(bar.melody) for bar in all_bars)
+    all_bass_bars = (note_groups_to_alda(bar.bass) for bar in all_bars)
 
     # 根据 parts 参数决定包含的部分
     alda_parts = []

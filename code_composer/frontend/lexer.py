@@ -2,6 +2,7 @@
 基础词法分析器模块：定义 Token 和 BaseLexer 接口
 """
 
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import List
 
@@ -38,17 +39,18 @@ class TokenType(Enum):
     NEWLINE = auto()
 
 
+@dataclass(frozen=True)
 class Token:
     """代表一个词素（Token）"""
     
-    def __init__(self, type_: TokenType, value: str, line: int = 0, col: int = 0):
-        self.type = type_
-        self.value = value
-        self.line = line
-        self.col = col
+    type: TokenType
+    value: str
+    line: int = 0
+    col: int = 0
+    level: int = 0
     
     def __repr__(self):
-        return f"Token({self.type.name}, {repr(self.value)}, {self.line}, {self.col})"
+        return f"Tok({self.type.name}, {repr(self.value)}, {self.line}, {self.col})"
 
 
 class BaseLexer:

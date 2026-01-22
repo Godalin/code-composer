@@ -520,6 +520,18 @@ def gen_progression_alda(tonic: str, scale: str, progression_name: str, tempo: i
     return f"piano: {' '.join(parts)}"
 
 
+def vary_chord(chord: Chord, level: int) -> Chord:
+    """创建和声变体"""
+    root = chord[0]
+    match level:
+        case -2:
+            return build_aug(root)
+        case -1:
+            return build_dim(root)
+        case _:
+            return chord
+
+
 # ===== 和声进行风格库 =====
 
 # 和弦进行加载（延迟加载）

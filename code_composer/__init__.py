@@ -17,7 +17,7 @@ from .composer import (
     compose,
 )
 from .bass import (
-    generate_bass_bar,
+    generate_bar_bass,
     list_bass_patterns,
 )
 from .exporter import (
@@ -38,14 +38,15 @@ from .theory import (
     get_scale,
     gen_progression,
     get_available_progressions,
-    get_default_progression
+    get_default_progression,
+    vary_chord,
 )
 
 __version__ = "0.1.0"
 __all__ = [
     "compose",
     # Bass module
-    "generate_bass_bar",
+    "generate_bar_bass",
     "list_bass_patterns",
     # Data structures
     "Bar",
@@ -64,4 +65,5 @@ __all__ = [
     "gen_progression",
     "get_available_progressions",
     "get_default_progression",
+    "vary_chord",
 ]

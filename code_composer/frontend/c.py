@@ -2,8 +2,11 @@
 C 代码前端 - 使用 pycparser 库进行解析
 """
 
-from pycparser import c_parser, c_ast
+import re, random
 from typing import List
+
+from pycparser import c_parser, c_ast
+
 from .lexer import Token, TokenType, BaseLexer
 
 
@@ -220,7 +223,6 @@ class CLexer(BaseLexer):
         按空白和标点符号分割源代码
         """
         tokens = []
-        import re
         
         # 分割标记
         pattern = r'(\w+|[(){}\[\];:,.]|[+\-*/%=<>!&|^?]|//.*?$|/\*.*?\*/)'

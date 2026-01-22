@@ -185,7 +185,7 @@ BASS_PATTERNS: Dict[str, Callable[[List[str], int, Fraction], List[List[Note]]]]
 }
 
 
-def generate_bass_bar(
+def generate_bar_bass(
     chord: Chord,
     bass_pattern_mode: str,
     bar_target_beats: Fraction,
