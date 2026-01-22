@@ -2,7 +2,10 @@
 Code Composer 使用示例
 """
 
-from code_composer import compose_to_mp3
+from code_composer.composer import compose
+from code_composer.exporter import export_to_midi, midi_to_mp3
+from code_composer.frontend.c import compile_c_code
+from code_composer.styles import get_style
 
 # 示例 1：Fibonacci 数列
 fibonacci_code = """
@@ -19,11 +22,24 @@ int main() {
 
 if __name__ == "__main__":
     # 转换为 MP3
-    compose_to_mp3(
-        fibonacci_code,
-        output_mp3="output/fibonacci.mp3",
-        tempo=120,
-        bars_per_phrase=4
+    alda_file = './out.alda'
+    midi_file = './out.midi'
+    mp3_file = './out.mp3'
+
+    # 获取 Style 并编译源码
+    style_obj = get_style("default")
+    tokens = compile_c_code(fibonacci_code)
+    alda_score, metadata, comp = compose(
+        style=style_obj,
+        tokens=tokens,
     )
-    
-    print("✓ 示例运行完成！生成的 MP3 文件在 output 目录中")
+
+    # 保存 Alda 文件
+    with open(alda_file, 'w') as f:
+        f.write(alda_score)
+
+    # 导出 MIDI
+    export_to_midi(alda_file, midi_file)
+
+    # 导出 MP3
+    midi_to_mp3(midi_file, mp3_file)
