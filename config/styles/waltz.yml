@@ -34,9 +34,9 @@ rhythm_weights:
 
 # 动机权重（优雅流畅）
 motif_weights:
-  - { type: ASCENDING, weight: 30 }
-  - { type: DESCENDING, weight: 30 }
-  - { type: ARCH, weight: 20 }
-  - { type: VALLEY, weight: 12 }
-  - { type: REPEAT, weight: 5 }
-  - { type: RANDOM, weight: 3 }
+  - { type: ascending, weight: 30 }
+  - { type: descending, weight: 30 }
+  - { type: arch, weight: 20 }
+  - { type: valley, weight: 12 }
+  - { type: repeat, weight: 5 }
+  - { type: random, weight: 3 }

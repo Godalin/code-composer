@@ -94,7 +94,7 @@ def generate_bar(
         # 用休止符补齐
         rest_parts = fill_rests(target - total)
         for r in rest_parts:
-            duration = r[1:]
+            duration = r
             notes.append([Note(name='r', octave=None, velocity=0, duration=duration)])
 
     return notes

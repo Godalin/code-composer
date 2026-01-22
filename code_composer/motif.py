@@ -4,43 +4,34 @@
 """
 
 import random
-from enum import Enum
-from typing import Generator, List, Optional, Tuple
+from pprint import pprint
+from typing import Generator, List, Tuple
+
 from .theory import Pitch, Chord, ScalePitches
 
 
-class Motif(Enum):
-    """旋律动机类型枚举"""
-    ASCENDING = "ascending"   # 上行
-    DESCENDING = "descending" # 下行
-    ARCH = "arch"             # 拱形
-    VALLEY = "valley"         # 谷形
-    REPEAT = "repeat"         # 重复
-    RANDOM = "random"         # 随机
+
+MotifPattern = List[List[int]]  # 外层为分段，内层为该段 pattern
+MotifWeight = Tuple[int, str]   # (权重, motif_name)
+MotifGenerator = Generator[Pitch, None, None]
 
 
-MotifWeight = Tuple[int, Motif]
-
-
-def choose_motif_type(weights: List[MotifWeight]) -> Motif:
-    """根据权重随机选择动机类型"""
+def choose_motif_type(weights: List[MotifWeight]) -> str:
+    """根据权重随机选择动机类型（motif_name）"""
+    from .config_loader import load_motifs
     if not weights:
-        return random.choice(list(Motif))
-    
+        motifs = list(load_motifs().keys())
+        return random.choice(motifs)
     motifs = [m for _, m in weights]
     weight_vals = [w for w, _ in weights]
     return random.choices(motifs, weights=weight_vals, k=1)[0]
 
 
 def get_motif_weights(style_name: str) -> List[MotifWeight]:
-    """按风格名称返回动机权重预设"""
+    """按风格名称返回动机权重预设 (motif_name)"""
     from .config_loader import get_style_motif_weights
-    
-    # 从配置加载动机权重
     entries = get_style_motif_weights(style_name)
-    
-    # 转换为 MotifWeight 格式
-    return [(weight, Motif(name)) for weight, name in entries]
+    return [(weight, name) for weight, name in entries]
 
 
 # ===== 辅助函数 =====
@@ -54,141 +45,42 @@ def _find_start_pitch(chord: Chord, octave_hint: int) -> Pitch:
     return candidates[0]
 
 
-def _find_next_ascending(current: Pitch, scale_pitches: ScalePitches) -> Optional[Pitch]:
+def _find_next_ascending(current: Pitch, scale_pitches: ScalePitches) -> Pitch:
     """找下一个更高的音阶音"""
-    next_idx = Pitch.note_index(current.name)
-    candidates = [p for p in scale_pitches 
-                 if Pitch.note_index(p.name) > next_idx 
-                 and p.octave >= current.octave and p.octave <= 6]
-    if not candidates:
-        # 尝试下一个八度的第一个音
-        candidates = [p for p in scale_pitches 
-                     if p.octave == current.octave + 1 and p.octave <= 6]
-    return candidates[0] if candidates else None
+    candidates = ([Pitch(p.name, current.octave) for p in scale_pitches]
+                + [Pitch(p.name, current.octave + 1) for p in scale_pitches]
+                + [Pitch(p.name, current.octave + 2) for p in scale_pitches])
+    while True:
+        if current in candidates:
+            current_idx = candidates.index(current)
+            break
+        else:
+            current = current.transpose(1)
+    return candidates[current_idx+1]
 
 
-def _find_next_descending(current: Pitch, scale_pitches: ScalePitches) -> Optional[Pitch]:
+def _find_next_descending(current: Pitch, scale_pitches: ScalePitches) -> Pitch:
     """找下一个更低的音阶音"""
-    next_idx = Pitch.note_index(current.name)
-    candidates = [p for p in scale_pitches 
-                 if Pitch.note_index(p.name) < next_idx 
-                 and p.octave <= current.octave and p.octave >= 3]
-    if not candidates:
-        candidates = [p for p in scale_pitches 
-                     if p.octave == current.octave - 1 and p.octave >= 3]
-    return candidates[-1] if candidates else None
+    candidates = ([Pitch(p.name, current.octave - 2) for p in scale_pitches]
+                + [Pitch(p.name, current.octave - 1) for p in scale_pitches]
+                + [Pitch(p.name, current.octave) for p in scale_pitches])
+    current_idx = 0
+    while True:
+        if current in candidates:
+            current_idx = candidates.index(current)
+            break
+        else:
+            current = current.transpose(-1)
+    return candidates[current_idx-1]
 
 
 # ===== 生成器函数 =====
-
-def ascending_motif(
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """上行动机生成器 - 沿音阶逐步上升"""
-    current = _find_start_pitch(chord, octave_hint)
-    
-    while True:
-        yield current
-        next_pitch = _find_next_ascending(current, scale_pitches)
-        if next_pitch:
-            current = next_pitch
-        # 如果没有更高的音，保持当前音
-
-
-def descending_motif(
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """下行动机生成器 - 沿音阶逐步下降"""
-    current = _find_start_pitch(chord, octave_hint)
-    
-    while True:
-        yield current
-        next_pitch = _find_next_descending(current, scale_pitches)
-        if next_pitch:
-            current = next_pitch
-
-
-def arch_motif(
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """拱形动机生成器 - 前半上行，后半下行"""
-    current = _find_start_pitch(chord, octave_hint)
-    step = 0
-    direction = 1  # 1=上行，-1=下行
-    
-    while True:
-        yield current
-        # 在第3步切换方向（简单的拱形）
-        step += 1
-        if step == 3:
-            direction = -1
-        
-        if direction == 1:
-            next_pitch = _find_next_ascending(current, scale_pitches)
-            if next_pitch:
-                current = next_pitch
-        else:
-            next_pitch = _find_next_descending(current, scale_pitches)
-            if next_pitch:
-                current = next_pitch
-
-
-def valley_motif(
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """谷形动机生成器 - 前半下行，后半上行"""
-    current = _find_start_pitch(chord, octave_hint)
-    step = 0
-    direction = -1  # -1=下行，1=上行
-    
-    while True:
-        yield current
-        # 在第3步切换方向
-        step += 1
-        if step == 3:
-            direction = 1
-        
-        if direction == -1:
-            next_pitch = _find_next_descending(current, scale_pitches)
-            if next_pitch:
-                current = next_pitch
-        else:
-            next_pitch = _find_next_ascending(current, scale_pitches)
-            if next_pitch:
-                current = next_pitch
-
-
-def repeat_motif(
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """重复动机生成器 - 保持在起始音或小幅摆动"""
-    base = _find_start_pitch(chord, octave_hint)
-    
-    while True:
-        yield base
-        # 30%概率在邻近音之间摆动
-        neighbors = [p for p in scale_pitches 
-                    if abs(Pitch.note_index(p.name) - Pitch.note_index(base.name)) <= 2 
-                    and p.octave == base.octave]
-        if neighbors and random.random() < 0.3:
-            base = random.choice(neighbors)
-
 
 def random_motif(
     chord: Chord,
     scale_pitches: ScalePitches,
     octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
+) -> MotifGenerator:
     """随机动机生成器 - 随机选择方向（上升/下降）"""
     current = _find_start_pitch(chord, octave_hint)
     
@@ -205,38 +97,58 @@ def random_motif(
             current = next_pitch
 
 
-# ===== 工厂函数 =====
+# ===== pattern 驱动动机生成器 =====
 
-def create_motif_generator(
+def gen_motif_generator(
     chord: Chord,
     scale_pitches: ScalePitches,
-    motif_type: Motif,
+    motif_pattern: MotifPattern,
+    n_steps: int = 8,
     octave_hint: int = 4,
-) -> Generator[Pitch, None, None]:
-    """
-    工厂函数 - 根据动机类型返回对应的生成器
-    
-    参数：
-        chord: 当前和弦音（List[Pitch]）
-        scale_pitches: 当前调式的完整音阶（一个八度）
-        motif_type: 动机类型
-        octave_hint: 起始八度提示
-    
-    返回：
-        Generator[Pitch, None, None]：无限生成音符的生成器
-    """
-    if motif_type == Motif.ASCENDING:
-        return ascending_motif(chord, scale_pitches, octave_hint)
-    elif motif_type == Motif.DESCENDING:
-        return descending_motif(chord, scale_pitches, octave_hint)
-    elif motif_type == Motif.ARCH:
-        return arch_motif(chord, scale_pitches, octave_hint)
-    elif motif_type == Motif.VALLEY:
-        return valley_motif(chord, scale_pitches, octave_hint)
-    elif motif_type == Motif.REPEAT:
-        return repeat_motif(chord, scale_pitches, octave_hint)
-    elif motif_type == Motif.RANDOM:
-        return random_motif(chord, scale_pitches, octave_hint)
-    else:
-        # 默认上行
-        return ascending_motif(chord, scale_pitches, octave_hint)
+) -> MotifGenerator:
+    """从 MotifPattern 生成 MotifGenerator"""
+
+    # 以和弦音为起点
+    current = _find_start_pitch(chord, octave_hint)
+    n_segments = len(motif_pattern)
+    seg_idx = 0
+    step_in_seg = 0
+    while True:
+        yield current
+        seg_pattern = motif_pattern[seg_idx]
+        offset = seg_pattern[step_in_seg % len(seg_pattern)]
+        # offset > 0: 上行, < 0: 下行, =0: 保持
+        if offset > 0:
+            for _ in range(abs(offset)):
+                current = _find_next_ascending(current, scale_pitches)
+        elif offset < 0:
+            for _ in range(abs(offset)):
+                current = _find_next_descending(current, scale_pitches)
+        # offset == 0: 保持 current 不变
+        step_in_seg += 1
+        # 按 n_steps 均分 pattern 周期，切换到下一个分段
+        if n_steps > 0:
+            seg_len = n_steps // n_segments + (1 if seg_idx < n_steps % n_segments else 0)
+            if step_in_seg >= seg_len:
+                seg_idx = (seg_idx + 1) % n_segments
+                step_in_seg = 0
+
+
+def create_motif_generator (
+    chord: Chord,
+    scale_pitches: ScalePitches,
+    motif_type: str,
+    n_steps: int = 8,
+    octave_hint: int = 4,
+) -> MotifGenerator:
+    """从动机名称生成 MotifGenerator"""
+
+    print(f"使用动机 {motif_type}")
+
+    from .config_loader import load_motifs
+    motif_lib = load_motifs()
+    if motif_type not in motif_lib.keys():
+        raise  ValueError(f"不存在的动机：{motif_type}")
+    motif_pattern = motif_lib[motif_type]["pattern"]
+    return gen_motif_generator(
+        chord, scale_pitches, motif_pattern, n_steps, octave_hint)

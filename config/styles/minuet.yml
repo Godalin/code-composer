@@ -32,9 +32,9 @@ rhythm_weights:
 
 # 动机权重（典雅对称）
 motif_weights:
-  - { type: ASCENDING, weight: 28 }
-  - { type: DESCENDING, weight: 28 }
-  - { type: ARCH, weight: 22 }
-  - { type: VALLEY, weight: 15 }
-  - { type: REPEAT, weight: 5 }
-  - { type: RANDOM, weight: 2 }
+  - { type: ascending, weight: 28 }
+  - { type: descending, weight: 28 }
+  - { type: arch, weight: 22 }
+  - { type: valley, weight: 15 }
+  - { type: repeat, weight: 5 }
+  - { type: random, weight: 2 }

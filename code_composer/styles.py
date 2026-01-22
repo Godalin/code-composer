@@ -10,7 +10,7 @@ from fractions import Fraction
 from typing import Dict, List, Tuple, Literal, Optional
 
 from .rhythms import RhythmPattern
-from .motif import MotifWeight, Motif
+from .motif import MotifWeight
 
 
 @dataclass(frozen=True)
@@ -76,8 +76,7 @@ def _build_style_from_config(style_name: str) -> Style:
     weights = [weight for weight, name in rhythm_entries]
     
     # 加载动机权重
-    motif_entries = get_style_motif_weights(style_name)
-    motif_weights = [(weight, Motif(name)) for weight, name in motif_entries]
+    motif_weights = get_style_motif_weights(style_name)
     
     # 加载和弦进行
     progressions_dict = get_style_progressions(style_name)

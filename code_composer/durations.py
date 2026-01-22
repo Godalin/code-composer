@@ -12,9 +12,8 @@ if TYPE_CHECKING:
 
 
 
-
 # 休止符贪心顺序（不含全音符，以避免过长停顿）
-_REST_GREEDY_ORDER = ['2', '4', '6', '8', '12', '16', '32']
+_REST_GREEDY_ORDER : List[int] = [2, 4, 6, 8, 12, 16, 32]
 
 
 def duration_to_beats(dur: int) -> Fraction:
@@ -24,12 +23,12 @@ def duration_to_beats(dur: int) -> Fraction:
     return Fraction(1, 1)
 
 
-def fill_rests(remaining: Fraction) -> List[str]:
+def fill_rests(remaining: Fraction) -> List[int]:
     """贪心补齐 rests，使用常见时值"""
     res = []
     rem = remaining
     for name in _REST_GREEDY_ORDER:
-        beats = duration_to_beats(int(name))
+        beats = duration_to_beats(name)
         while rem >= beats:
             res.append(f"r{name}")
             rem -= beats

@@ -35,9 +35,9 @@ rhythm_weights:
 
 # 动机权重（强调上行和下行，减少拱形）
 motif_weights:
-  - { type: ASCENDING, weight: 50 }
-  - { type: DESCENDING, weight: 40 }
-  - { type: ARCH, weight: 0 }
-  - { type: VALLEY, weight: 0 }
-  - { type: REPEAT, weight: 5 }
-  - { type: RANDOM, weight: 5 }
+  - { type: ascending, weight: 50 }
+  - { type: descending, weight: 40 }
+  - { type: arch, weight: 0 }
+  - { type: valley, weight: 0 }
+  - { type: repeat, weight: 5 }
+  - { type: random, weight: 5 }

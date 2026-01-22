@@ -123,7 +123,7 @@
         "type": {
           "type": "string",
           "description": "动机类型",
-          "enum": ["ASCENDING", "DESCENDING", "ARCH", "VALLEY", "REPEAT", "RANDOM"]
+          "enum": ["ascending", "descending", "arch", "valley", "repeat", "random"]
         },
         "weight": {
           "type": "integer",

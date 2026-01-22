@@ -11,7 +11,7 @@ import yaml
 
 from .theory import ScaleDegree
 from .rhythms import RhythmPattern
-from .motif import Motif, MotifWeight
+from .motif import MotifWeight
 
 
 # 配置文件根目录（模块级常量）
@@ -97,6 +97,12 @@ def load_multiple_progressions(progression_sources: List[str]) -> Dict[str, str]
         all_progressions.update(progressions)
     return all_progressions
 
+# ===== 动机模板库加载 =====
+
+def load_motifs() -> Dict[str, Dict[str, Any]]:
+    """加载动机模板库"""
+    data = _load_yaml("motifs.yml")
+    return data["motifs"]
 
 # ===== 风格加载 =====
 
@@ -119,15 +125,13 @@ def get_style_rhythm_weights(style_name: str) -> List[Tuple[int, str]]:
 
 
 def get_style_motif_weights(style_name: str) -> List[MotifWeight]:
-    """获取风格的动机权重列表"""
+    """获取风格的动机权重列表 (motif_name)"""
     style_config = load_style(style_name)
     motif_weights = []
-    
     for entry in style_config['motif_weights']:
         weight = entry['weight']
-        motif_type = Motif[entry['type']]  # 字符串转枚举
-        motif_weights.append((weight, motif_type))
-    
+        motif_name = entry['type']
+        motif_weights.append((weight, motif_name))
     return motif_weights
 
 

@@ -14,7 +14,7 @@
 from typing import List, Tuple, Dict
 
 # 节奏模式：(时值列表, 强弱列表)
-RhythmPattern = Tuple[List[str], List[int]]
+RhythmPattern = Tuple[List[int], List[int]]
 # 风格条目：(权重, 节奏名称)
 StyleEntry = Tuple[int, str]
 # 最终预设：(模式列表, 权重列表)

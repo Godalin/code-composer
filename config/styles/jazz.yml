@@ -50,9 +50,9 @@ rhythm_weights:
 
 # 动机权重（更多变化和重复）
 motif_weights:
-  - { type: ASCENDING, weight: 22 }
-  - { type: DESCENDING, weight: 22 }
-  - { type: ARCH, weight: 18 }
-  - { type: VALLEY, weight: 18 }
-  - { type: REPEAT, weight: 10 }
-  - { type: RANDOM, weight: 10 }
+  - { type: ascending, weight: 22 }
+  - { type: descending, weight: 22 }
+  - { type: arch, weight: 18 }
+  - { type: valley, weight: 18 }
+  - { type: repeat, weight: 10 }
+  - { type: random, weight: 10 }

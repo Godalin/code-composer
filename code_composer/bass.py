@@ -29,7 +29,7 @@ def _finish_bar(
     total = sum(duration_to_beats(d) for d in durations)
     if total < target:
         for r in fill_rests(target - total):
-            groups.append([Note(name='r', octave=None, velocity=0, duration=int(r[1:]))])
+            groups.append([Note(name='r', octave=None, velocity=0, duration=r)])
     return groups
 
 

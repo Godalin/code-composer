@@ -1,0 +1,26 @@
+# 动机模板库
+# 每个动机类型用 pattern 数字序列描述
+# 例如 arch: [[0, 1, 1, -1, -1]]
+
+motifs:
+  arch:
+    name: "拱形"
+    pattern: [[1], [-1]]
+  valley:
+    name: "谷形"
+    pattern: [[-1], [1]]
+  repeat:
+    name: "重复"
+    pattern: [[0]]
+  ascending:
+    name: "上行"
+    pattern: [[1]]
+  descending:
+    name: "下行"
+    pattern: [[-1]]
+  zigzag:
+    name: "之字形"
+    pattern: [[2, -2]]
+  random:
+    name: "重复"
+    pattern: [[0]]

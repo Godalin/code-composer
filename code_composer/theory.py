@@ -10,9 +10,15 @@
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from typing import Callable, Dict, List, NewType, Optional, Tuple
+
+
+# 音名集合（小写 + 升号，Alda 兼容）
+NOTES_SHARP: List[str] = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+FLAT_TO_SHARP: Dict[str, str] = {'bb': 'a#', 'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'cb': 'b', 'fb': 'e'}
+ENHARMONIC: Dict[str, str] = {'b#': 'c', 'e#': 'f'}
 
 
 @dataclass(frozen=True)
@@ -80,13 +86,21 @@ class Pitch:
     """音高：音名与八度的不可变对象，使用科学记号法（C4=中央C）。"""
     name: str
     octave: int
+    index: int = field(init=False)
     
     def __post_init__(self):
         object.__setattr__(self, 'name', Pitch.normalize(self.name))
+        object.__setattr__(self, 'index', Pitch.note_index(self.name))
     
     def __str__(self) -> str:
         """科学记号表示（如 'c4', 'f♯5'）"""
         return f"{self.name.replace('#', '♯')}{self.octave}"
+    
+    def __eq__(self, other) -> bool:
+        """只允许 Pitch 之间的比较"""
+        if not isinstance(other, Pitch):
+            return False
+        return self.index == other.index and self.octave == other.octave
     
     @staticmethod
     def normalize(note: str) -> str:
@@ -106,11 +120,13 @@ class Pitch:
         return NOTES_SHARP.index(Pitch.normalize(note))
     
     def transpose(self, semitones: int) -> 'Pitch':
-        """转置指定半音数。例：Pitch('b', 4).transpose(1) → Pitch('c', 5)。"""
+        """转置指定半音数。支持正负值."""
         current_idx = Pitch.note_index(self.name)
         new_idx = current_idx + semitones
+
         octave_shift = new_idx // 12
         note_idx = new_idx % 12
+
         return Pitch(NOTES_SHARP[note_idx], self.octave + octave_shift)
 
 
@@ -119,12 +135,6 @@ ScaleNotes = NewType('ScaleNotes', List[str])  # 仅音名的音阶
 ScalePitches = NewType('ScalePitches', List[Pitch])  # 带八度的音阶序列
 Chord = NewType('Chord', List[Pitch])  # 同时发声的一组音
 Progression = NewType('Progression', List[Tuple[str, Chord]])  # 进行：标记 + 和弦
-
-
-# 音名集合（小写 + 升号，Alda 兼容）
-NOTES_SHARP: List[str] = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-FLAT_TO_SHARP: Dict[str, str] = {'bb': 'a#', 'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'cb': 'b', 'fb': 'e'}
-ENHARMONIC: Dict[str, str] = {'b#': 'c', 'e#': 'f'}
 
 
 # ===== 音阶 =====
