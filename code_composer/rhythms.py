@@ -28,6 +28,12 @@ def _get_rhythm_library(time_signature: str) -> Dict[str, RhythmPattern]:
     return load_rhythm_patterns(time_signature)
 
 
+def get_rhythm(time_signature: str, rhythm_name: str) -> RhythmPattern:
+    """从名称获取指定拍号的节奏型"""
+    from .config_loader import load_rhythm_patterns
+    return load_rhythm_patterns(time_signature)[rhythm_name]
+
+
 def _resolve_rhythm_entries(entries: List[StyleEntry], time_signature: str) -> RhythmPreset:
     """根据 (权重, 名称) 列表和节奏库解析出最终的 (模式列表, 权重列表)"""
     rhythm_lib = _get_rhythm_library(time_signature)
@@ -41,7 +47,7 @@ def _resolve_rhythm_entries(entries: List[StyleEntry], time_signature: str) -> R
     return patterns, weights
 
 
-def get_rhythm(style: str) -> RhythmPreset:
+def get_style_rhythm(style: str) -> RhythmPreset:
     """根据风格名称获取节奏预设"""
     from .config_loader import get_style_rhythm_weights, load_style
     

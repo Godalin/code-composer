@@ -39,7 +39,7 @@ from .structures import (
     note_groups_to_alda,
 )
 from .motif import create_motif_generator, choose_motif_type, MotifWeight
-from .bass import generate_bar_bass
+from .bass import gen_bar_bass
 from .durations import duration_to_beats, fill_rests
 
 
@@ -94,7 +94,7 @@ def generate_bar_melody(
         pitch = next(motif_gen)  # 从生成器获取下一个音符
         acc = accents[idx] if idx < len(accents) else 0
         vel = volume_map.get(acc, 80)
-        notes.append([Note(name=pitch.name, octave=pitch.octave, velocity=vel, duration=dur)])
+        notes.append([Note(pitch=pitch, velocity=vel, duration=dur)])
     
     # 补齐不足的拍子
     target = bar_target_beats
@@ -104,7 +104,7 @@ def generate_bar_melody(
         rest_parts = fill_rests(target - total)
         for r in rest_parts:
             duration = r
-            notes.append([Note(name='r', octave=None, velocity=0, duration=duration)])
+            notes.append([Note(pitch=None, velocity=0, duration=duration)])
 
     return notes
 
@@ -183,6 +183,7 @@ def build_phrases_skeleton(
 def fill_phrases_content(
     tokens: List[Token],
     phrases: List[Phrase],
+    time_signature: str,
     rhythm_patterns: List[RhythmPattern],
     rhythm_weights: List[int],
     bar_target_beats: Fraction,
@@ -219,18 +220,20 @@ def fill_phrases_content(
                 )
 
                 # 生成小节伴奏
-                bass_notes = generate_bar_bass(
+                bass_notes = gen_bar_bass(
                     chord_var if not ignore_bad else span.chord,
-                    bass_pattern_mode,
-                    bar_target_beats,
                     octave,
+                    bar_target_beats,
+                    time_signature,
+                    bass_pattern_mode,
                 )
 
-                string_notes = generate_bar_bass(
+                string_notes = gen_bar_bass(
                     span.chord,
-                    "block",
-                    bar_target_beats,
                     octave,
+                    bar_target_beats,
+                    time_signature,
+                    "block",
                 )
 
                 # 使用不可变操作创建更新的 Bar
@@ -344,6 +347,7 @@ def compose(
     phrases_with_content = fill_phrases_content(
         tokens,
         phrases,
+        style.time_signature,
         rhythm_patterns,
         rhythm_weights,
         bar_target_beats,

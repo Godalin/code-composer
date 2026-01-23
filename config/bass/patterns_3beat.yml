@@ -1,0 +1,35 @@
+# 低音（伴奏）模板库
+# 每个低音模式用 pattern 数字序列描述
+# pattern: 一小节的模式，[0] 表示所有音同时发声，[1] [2 3] ... 表示第 1 个音，第 2 3 个音同时发声
+# rhythm: 表示节奏型，同时节奏型包含了重音，所以很好用
+
+bass:
+  block:
+    name: "柱式"
+    pattern: [[0]]
+    rhythm: whole
+
+  double:
+    name: "根五交替"
+    pattern: [[0], [3]]
+    rhythm: 2_4
+
+  arpeggio:
+    name: "分解和弦"
+    pattern: [[0], [2], [3]]
+    rhythm: even_3
+
+  pendulum:
+    name: "钟摆"
+    pattern: [[0], [2], [3]]
+    rhythm: even_3
+
+  walking:
+    name: "行进"
+    pattern: [[0], [2], [3], [1], [2], [3]]
+    rhythm: 4x3
+
+  ostinato:
+    name: "持续音型"
+    pattern: [[0], [0], [2]]
+    rhythm: even_3

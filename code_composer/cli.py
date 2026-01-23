@@ -13,7 +13,7 @@ from pathlib import Path
 from .composer import compose
 from .frontend import compile_c_code
 from .styles import create_style_with_overrides, get_style, list_styles
-from .config_loader import load_scales
+from .config_loader import load_scales, list_available_bass_patterns
 from .exporter import export_to_midi, midi_to_mp3, play_alda_code
 from .structures import print_composition_tree
 from .theory import (
@@ -141,9 +141,9 @@ def create_parser():
     parser.add_argument(
         '--bass-pattern',
         type=str,
-        choices=['block', 'double', 'arpeggio', 'pendulum', 'waltz_oom_pah', 'minuet_duple'],
+        choices=list_available_bass_patterns(),
         default=None,
-        help='低音模式（默认使用风格的低音模式）'
+        help='低音模式（默认使用风格的低音模式）',
     )
     
     parser.add_argument(

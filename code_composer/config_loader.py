@@ -12,6 +12,7 @@ import yaml
 from .theory import ScaleDegree
 from .rhythms import RhythmPattern
 from .motif import MotifWeight
+from .bass import BassPattern
 
 
 # 配置文件根目录（模块级常量）
@@ -103,6 +104,28 @@ def load_motifs() -> Dict[str, Dict[str, Any]]:
     """加载动机模板库"""
     data = _load_yaml("motifs.yml")
     return data["motifs"]
+
+
+# ===== 低音模板库加载 =====
+
+def load_bass_patterns(time_signature: str) -> Dict[str, BassPattern]:
+    """加载节奏型库"""
+    if time_signature == '4/4':
+        filename = "bass/patterns_4beat.yml"
+    elif time_signature == '3/4':
+        filename = "bass/patterns_3beat.yml"
+    else:
+        raise ValueError(f"不支持的拍号: {time_signature}")
+    
+    data = _load_yaml(filename)
+    return data["bass"]
+
+
+def list_available_bass_patterns() -> List[str]:
+    """列出所有可用的低音模式名称，不论拍号"""    
+    return list(set(load_bass_patterns("4/4").keys())
+        .union(set(load_bass_patterns("3/4").keys())))
+
 
 # ===== 风格加载 =====
 

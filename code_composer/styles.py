@@ -31,6 +31,7 @@ class Style:
     bar_patterns: List[RhythmPattern]
     bar_pattern_weights: List[int]
     available_progressions: List[str]
+    time_signature: str = "4/4"
     bar_target_beats: Fraction = Fraction(4, 1)
     bass_pattern: Literal['block', 'double', 'arpeggio', 'pendulum', 'waltz_oom_pah', 'minuet_duple'] = 'block'
     blue_notes: bool = False
@@ -87,6 +88,7 @@ def _build_style_from_config(style_name: str) -> Style:
     
     return Style(
         name=style_name,
+        time_signature=time_sig_str,
         bar_patterns=patterns,
         bar_pattern_weights=weights,
         available_progressions=progressions,

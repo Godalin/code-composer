@@ -17,7 +17,7 @@ from .composer import (
     compose,
 )
 from .bass import (
-    generate_bar_bass,
+    gen_bar_bass,
     list_bass_patterns,
 )
 from .exporter import (
@@ -46,7 +46,7 @@ __version__ = "0.1.0"
 __all__ = [
     "compose",
     # Bass module
-    "generate_bar_bass",
+    "gen_bar_bass",
     "list_bass_patterns",
     # Data structures
     "Bar",

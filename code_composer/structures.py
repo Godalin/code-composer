@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Generator, List, Optional, Any, Dict
 
 from .durations import sum_note_groups_beats
-from .theory import Chord
+from .theory import Pitch, Chord
 
 
 def _convert_note_to_alda(note_name: str) -> str:
@@ -33,10 +33,9 @@ def _convert_note_to_alda(note_name: str) -> str:
 @dataclass(frozen=True)
 class Note:
     """音符：包含音高（音名+八度）、力度（音量）和时值（分母整数）"""
-    name: str       # 音名，如 'c', 'd#', 'r'(休止符)
-    octave: Optional[int]  # 八度，休止符可为 None
-    velocity: int   # 力度（音量），如 75/80/85/95
+    pitch: Optional[Pitch]
     duration: int   # 时值分母整数，如 4, 8, 16, 6, 7 等
+    velocity: int = 0   # 力度（音量），如 75/80/85/95
 
 
 def note_groups_to_alda(groups: List[List["Note"]]) -> str:
@@ -45,19 +44,18 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
     用于旋律和伴奏的通用渲染函数。
     """
     parts: List[str] = []
-    current_octave: Optional[int] = None
     for group in groups:
         group_parts: List[str] = []
         for n in group:
             alda_dur = str(n.duration)
-            if n.name == 'r':
+            if n.pitch is None:
                 group_parts.append(f"r{alda_dur}")
                 continue
-            if n.octave is not None and n.octave != current_octave:
-                group_parts.append(f"o{n.octave}")
-                current_octave = n.octave
-            alda_note = _convert_note_to_alda(n.name)
-            group_parts.append(f"(vol {n.velocity}) {alda_note}{alda_dur}")
+            else:
+                group_parts.append(f"o{n.pitch.octave}")
+                alda_note = _convert_note_to_alda(n.pitch.name)
+                group_parts.append(f"(vol {n.velocity}) {alda_note}{alda_dur}")
+
         # 多个音符用 / 连接为和弦，每个音符单独带时值
         if len(group) > 1:
             chord_notes: List[str] = []
@@ -65,14 +63,14 @@ def note_groups_to_alda(groups: List[List["Note"]]) -> str:
             chord_velocity: Optional[int] = None
             for n in group:
                 alda_dur = str(n.duration)
-                if n.name == 'r':
+                if n.pitch is None:
                     chord_notes.append(f"r{alda_dur}")
                     continue
                 note_parts: List[str] = []
-                if n.octave is not None and n.octave != temp_octave:
-                    note_parts.append(f"o{n.octave}")
-                    temp_octave = n.octave
-                alda_note = _convert_note_to_alda(n.name)
+                if n.pitch is not None and n.pitch.octave != temp_octave:
+                    note_parts.append(f"o{n.pitch.octave}")
+                    temp_octave = n.pitch.octave
+                alda_note = _convert_note_to_alda(n.pitch.name)
                 note_parts.append(f"{alda_note}{alda_dur}")
                 chord_notes.append(" ".join(note_parts) if note_parts and note_parts[0].startswith('o') else "".join(note_parts))
                 if chord_velocity is None:
@@ -97,13 +95,13 @@ def note_groups_to_alda_debug(groups: List[List["Note"]]) -> str:
     for group in groups:
         group_parts: List[str] = []
         for n in group:
-            if n.name == 'r':
+            if n.pitch is None:
                 group_parts.append(f"r{n.duration}")
                 continue
-            if n.octave is not None and n.octave != current_octave:
-                group_parts.append(f"o{n.octave}")
-                current_octave = n.octave
-            alda_note = _convert_note_to_alda(n.name)
+            if n.pitch is not None and n.pitch.octave != current_octave:
+                group_parts.append(f"o{n.pitch.octave}")
+                current_octave = n.pitch.octave
+            alda_note = _convert_note_to_alda(n.pitch.name)
             group_parts.append(f"{alda_note}{n.duration}")
         # 只有多个音符时才用 []
         group_str = " ".join(group_parts)
