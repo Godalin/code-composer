@@ -60,3 +60,5 @@ output/
 *.swp
 .vscode/launch.json
 
+sf/*
+!*.sf2

@@ -454,7 +454,7 @@ def main():
             export_to_midi(alda_file, midi_file)
             
             # 导出 MP3
-            sf_file = Path(__file__).parent / "sf" / "GeneralUser-GS" / "GeneralUser-GS.sf2"
+            sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS.sf2"
             midi_to_mp3(midi_file, mp3_file, str(sf_file))
             
             print(f"✓ 生成成功!")
@@ -514,7 +514,7 @@ def main():
             elif args.format == 'mp3':
                 midi_file = output_file.replace('.mp3', '.mid')
                 export_to_midi(alda_file, midi_file)
-                sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS" / "GeneralUser-GS.sf2"
+                sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS.sf2"
                 print(sf_file)
                 midi_to_mp3(midi_file, output_file, str(sf_file))
             
