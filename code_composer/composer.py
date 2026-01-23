@@ -192,6 +192,7 @@ def fill_phrases_content(
     scale_pitches: ScalePitches,
     supplement_pitches: List[Pitch],
     ignore_bad: bool,
+    instrument: str = "violin",
 ) -> List[Phrase]:
     """填充所有小节的旋律和伴奏内容"""
     phrases_with_content = []
@@ -236,9 +237,9 @@ def fill_phrases_content(
                 bar_with_content = replace(bar,
                     parts = {
                         "piano": [bass_notes],
-                        # "piano": [melody_notes, bass_notes],
-                        # "violin": [string_notes],
-                        "guitar": [melody_notes],
+                        f"{instrument}": [melody_notes],
+                    } if instrument != "piano" else {
+                        "piano": [melody_notes, bass_notes],
                     })
                 bars_with_content.append(bar_with_content)
 
@@ -267,7 +268,7 @@ def compose(
     seed: Optional[int] = 42,
     parts: str = "both",
     ignore_bad: bool = True,
-    instrument: str = "piano",
+    instrument: str = "violin",
 ) -> Tuple[str, dict, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
 
@@ -321,7 +322,7 @@ def compose(
             key=key,
             scale=scale,
         )
-        return "piano:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
+        return f"{instrument}:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
 
     num_tokens = len(tokens)
     num_token_groups = (num_tokens + bars_per_token - 1) // bars_per_token
@@ -352,6 +353,7 @@ def compose(
         scale_pitches,
         supplement_pitches,
         ignore_bad,
+        instrument,
     )
 
     # 创建 Composition 对象

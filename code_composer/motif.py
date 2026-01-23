@@ -64,7 +64,6 @@ def _find_next_descending(current: Pitch, scale_pitches: ScalePitches) -> Pitch:
     candidates = ([Pitch(p.name, current.octave - 2) for p in scale_pitches]
                 + [Pitch(p.name, current.octave - 1) for p in scale_pitches]
                 + [Pitch(p.name, current.octave) for p in scale_pitches])
-    current_idx = 0
     while True:
         if current in candidates:
             current_idx = candidates.index(current)

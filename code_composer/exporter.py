@@ -104,6 +104,7 @@ def export_to_midi(
 def midi_to_mp3(
     midi_file: str,
     output_mp3: Optional[str] = None,
+    soundfont: Optional[str] = None,
 ) -> bool:
     """将 MIDI 文件转换为 MP3 音频文件"""
     if not os.path.exists(midi_file):
@@ -127,7 +128,8 @@ def midi_to_mp3(
         # 步骤 1：使用 timidity 将 MIDI 转为 WAV
         print("   第 1 步：合成音频 (timidity)...")
         result = subprocess.run(
-            ['timidity', midi_file, '-Ow', '-o', temp_wav],
+            ['timidity', midi_file, '-Ow', '-o', temp_wav] if not soundfont else
+                ['fluidsynth', "-F", temp_wav, '-r', '44100', soundfont, midi_file],
             capture_output=True,
             text=True,
             timeout=300

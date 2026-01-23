@@ -205,7 +205,7 @@ def create_parser():
     parser.add_argument(
         '--instrument',
         type=str,
-        default='piano',
+        default='violin',
         help='使用的乐器'
     )
 
@@ -454,7 +454,8 @@ def main():
             export_to_midi(alda_file, midi_file)
             
             # 导出 MP3
-            midi_to_mp3(midi_file, mp3_file)
+            sf_file = Path(__file__).parent / "sf" / "GeneralUser-GS" / "GeneralUser-GS.sf2"
+            midi_to_mp3(midi_file, mp3_file, str(sf_file))
             
             print(f"✓ 生成成功!")
             print(f"  • Alda:  {alda_file}")
@@ -513,7 +514,9 @@ def main():
             elif args.format == 'mp3':
                 midi_file = output_file.replace('.mp3', '.mid')
                 export_to_midi(alda_file, midi_file)
-                midi_to_mp3(midi_file, output_file)
+                sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS" / "GeneralUser-GS.sf2"
+                print(sf_file)
+                midi_to_mp3(midi_file, output_file, str(sf_file))
             
             print(f"✓ 生成成功!")
             print(f"  📁 输出文件: {output_file}")
