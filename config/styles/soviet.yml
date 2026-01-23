@@ -1,0 +1,34 @@
+# 苏联/俄罗斯风格配置
+
+name: soviet
+
+display_name: "苏联风格"
+description: "融合俄罗斯民谣与苏联红歌特色，强调宽广、激昂与进行曲感。"
+
+time_signature: 4/4
+bass_pattern: marching
+blue_notes: false
+
+defaults:
+  key: C
+  scale: russian_folk_minor
+  tempo: 110
+  octave: 4
+  progression: 1min-4min-5-1min
+
+progression_sources:
+  - progressions/minor.yml
+  - progressions/major.yml
+
+rhythm_weights:
+  - { pattern: whole, weight: 2 }
+  - { pattern: two_half, weight: 3 }
+  - { pattern: even_4, weight: 4 }
+  - { pattern: 4_2_4, weight: 2 }
+  - { pattern: 8x4_4x2, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 2 }
+
+motif_weights:
+  - { type: ascending, weight: 40 }
+  - { type: descending, weight: 30 }
+  - { type: arch, weight: 20 }

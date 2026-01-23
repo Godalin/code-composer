@@ -1,0 +1,40 @@
+# Japanese 风格配置
+
+name: japanese
+
+display_name: "和风"
+description: "采用日本传统五声音阶，强调空灵、优雅与留白，适合表现和风意境。"
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: arpeggio
+blue_notes: false
+
+# 默认值
+defaults:
+  key: D
+  scale: japanese_pentatonic  # 可自定义或用现有五声音阶
+  tempo: 100
+  octave: 4
+  progression: 1-2-5-1
+
+# 可用的和弦进行
+progression_sources:
+  - progressions/pentatonic.yml
+  - progressions/minor.yml
+
+# 节奏权重 - 偏好留白与律动结合
+rhythm_weights:
+  - { pattern: whole, weight: 3 }
+  - { pattern: two_half, weight: 3 }
+  - { pattern: 4_2_4, weight: 2 }
+  - { pattern: even_4, weight: 2 }
+  - { pattern: 4_8_8_4_4, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 2 }
+  - { pattern: 8x4_4x2, weight: 1 }
+
+# 动机权重 - 偏好下行、波浪型旋律
+motif_weights:
+  - { type: descending, weight: 40 }
+  - { type: arch, weight: 30 }
+  - { type: ascending, weight: 20 }

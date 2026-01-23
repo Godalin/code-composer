@@ -17,7 +17,7 @@ bass:
   double:
     name: "根五交替"
     pattern: [[0], [3]]
-    rhythm: even_2
+    rhythm: two_half
 
   arpeggio:
     name: "分解和弦"
@@ -37,4 +37,9 @@ bass:
   ostinato:
     name: "持续音型"
     pattern: [[0], [0], [2], [3]]
+    rhythm: even_4
+
+  marching:
+    name: "行军风格"
+    pattern: [[0], [3], [0], [3]]
     rhythm: even_4

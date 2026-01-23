@@ -27,8 +27,7 @@
     "bass_pattern": {
       "type": "string",
       "description": "低音模式",
-      "enum": ["block", "double", "arpeggio", "pendulum", "waltz_oom_pah", "minuet_duple"],
-      "default": "block"
+      "default": "pop"
     },
     "blue_notes": {
       "type": "boolean",
