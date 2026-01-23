@@ -525,9 +525,9 @@ def vary_chord(chord: Chord, level: int) -> Chord:
     root = chord[0]
     match level:
         case -2:
-            return build_aug(root)
+            return build_chord(root, [deg(0), deg(1, -1), deg(1)])
         case -1:
-            return build_dim(root)
+            return build_aug(root)
         case _:
             return chord
 
