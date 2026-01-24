@@ -10,12 +10,11 @@ bass_pattern: arpeggio
 blue_notes: false
 
 # 默认值
-defaults:
-  key: D
-  scale: hijaz
-  tempo: 80
-  octave: 4
-  progression: 1-4-1-5
+key: D
+scale: hijaz
+tempo: 80
+octave: 4
+progression: 1-4-1-5
 
 # 可用的和弦进行
 progression_sources:

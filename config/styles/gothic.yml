@@ -10,12 +10,11 @@ bass_pattern: pendulum
 blue_notes: false
 
 # 默认值
-defaults:
-  key: D
-  scale: phrygian
-  tempo: 72
-  octave: 3
-  progression: 1min-2-1min
+key: D
+scale: phrygian
+tempo: 72
+octave: 3
+progression: 1min-2-1min
 
 # 可用的和弦进行
 progression_sources:

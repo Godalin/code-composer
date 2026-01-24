@@ -9,12 +9,11 @@ time_signature: 4/4
 bass_pattern: marching
 blue_notes: false
 
-defaults:
-  key: C
-  scale: russian_folk_minor
-  tempo: 110
-  octave: 4
-  progression: 1min-4min-5-1min
+key: C
+scale: russian_folk_minor
+tempo: 110
+octave: 4
+progression: 1min-4min-5-1min
 
 progression_sources:
   - progressions/minor.yml

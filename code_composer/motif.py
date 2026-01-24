@@ -4,34 +4,42 @@
 """
 
 import random
-from pprint import pprint
-from typing import Generator, List, Tuple
+from typing import Generator, TypedDict
 
 from .theory import Pitch, Chord, ScalePitches
 
 
-
-MotifPattern = List[List[int]]  # 外层为分段，内层为该段 pattern
-MotifWeight = Tuple[int, str]   # (权重, motif_name)
-MotifGenerator = Generator[Pitch, None, None]
+# 外层为分段，内层为该段 pattern
+type MotifPattern = list[list[int]]
 
 
-def choose_motif_type(weights: List[MotifWeight]) -> str:
+# 权重条目形式
+class MotifWeight(TypedDict):
+    weight: int
+    type: str
+
+
+# 配置文件条目形式
+class MotifEntry(TypedDict):
+    name: str
+    pattern: MotifPattern
+
+
+def choose_motif_type(motif_weights: list[MotifWeight]) -> str:
     """根据权重随机选择动机类型（motif_name）"""
     from .config_loader import load_motifs
-    if not weights:
+    if not motif_weights:
         motifs = list(load_motifs().keys())
         return random.choice(motifs)
-    motifs = [m for _, m in weights]
-    weight_vals = [w for w, _ in weights]
+    motifs = [m['type'] for m in motif_weights]
+    weight_vals = [m['weight'] for m in motif_weights]
     return random.choices(motifs, weights=weight_vals, k=1)[0]
 
 
-def get_motif_weights(style_name: str) -> List[MotifWeight]:
+def get_motif_weights(style_name: str) -> list[MotifWeight]:
     """按风格名称返回动机权重预设 (motif_name)"""
     from .config_loader import get_style_motif_weights
-    entries = get_style_motif_weights(style_name)
-    return [(weight, name) for weight, name in entries]
+    return get_style_motif_weights(style_name)
 
 
 # ===== 辅助函数 =====
@@ -79,7 +87,7 @@ def random_motif(
     chord: Chord,
     scale_pitches: ScalePitches,
     octave_hint: int = 4,
-) -> MotifGenerator:
+) -> Generator[Pitch]:
     """随机动机生成器 - 随机选择方向（上升/下降）"""
     current = _find_start_pitch(chord, octave_hint)
     
@@ -104,7 +112,7 @@ def gen_motif_generator(
     motif_pattern: MotifPattern,
     n_steps: int = 8,
     octave_hint: int = 4,
-) -> MotifGenerator:
+) -> Generator[Pitch]:
     """从 MotifPattern 生成 MotifGenerator"""
 
     # 以和弦音为起点
@@ -139,11 +147,8 @@ def create_motif_generator (
     motif_type: str,
     n_steps: int = 8,
     octave_hint: int = 4,
-) -> MotifGenerator:
+) -> Generator[Pitch]:
     """从动机名称生成 MotifGenerator"""
-
-    print(f"使用动机 {motif_type}")
-
     from .config_loader import load_motifs
     motif_lib = load_motifs()
     if motif_type not in motif_lib.keys():

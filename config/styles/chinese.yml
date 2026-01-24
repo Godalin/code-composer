@@ -10,12 +10,11 @@ bass_pattern: arpeggio
 blue_notes: false
 
 # 默认值
-defaults:
-  key: C
-  scale: pentatonic_major
-  tempo: 120
-  octave: 4
-  progression: 1-2-4-5
+key: C
+scale: pentatonic_major
+tempo: 120
+octave: 4
+progression: 1-2-4-5
 
 # 可用的和弦进行
 progression_sources:
@@ -37,7 +36,7 @@ rhythm_weights:
 motif_weights:
   - { type: ascending, weight: 50 }
   - { type: descending, weight: 40 }
-  - { type: arch, weight: 0 }
-  - { type: valley, weight: 0 }
+  - { type: arch, weight: 20 }
+  - { type: valley, weight: 20 }
   - { type: repeat, weight: 5 }
   - { type: random, weight: 5 }

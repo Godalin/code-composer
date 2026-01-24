@@ -10,12 +10,11 @@ bass_pattern: minuet_duple
 blue_notes: false
 
 # 默认值
-defaults:
-  key: C
-  scale: major
-  tempo: 100
-  octave: 4
-  progression: 1-6min-4-5
+key: C
+scale: major
+tempo: 100
+octave: 4
+progression: 1-6min-4-5
 
 # 可用的和弦进行
 progression_sources:

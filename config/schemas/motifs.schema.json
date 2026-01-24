@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://code-composer/schemas/motifs.schema.json",
+  "title": "动机型配置",
+  "description": "动机型库配置文件的 JSON Schema",
+  "type": "object",
+  "required": ["motifs"],
+  "properties": {
+    "motifs": {
+      "type": "object",
+      "description": "动机型定义集合",
+      "additionalProperties": {
+        "$ref": "#/definitions/MotifPattern"
+      }
+    }
+  },
+  "definitions": {
+    "MotifPattern": {
+      "type": "object",
+      "description": "单个动机型定义",
+      "required": ["pattern"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "动机型名称"
+        },
+        "pattern": {
+          "type": "array",
+          "description": "动机型的分段",
+          "items": {
+            "type": "array",
+            "description": "每一段的走向",
+              "items": {
+                "type": "integer",
+                "enum": [0, -1, 1, -2, 2],
+                "minItems": 1
+              }
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

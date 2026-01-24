@@ -7,15 +7,13 @@ description: "复杂节奏和即兴感的爵士风格"
 # 基础参数
 time_signature: 4/4
 bass_pattern: block
-blue_notes: true
 
-# 默认值
-defaults:
-  key: G
-  scale: dorian
-  tempo: 130
-  octave: 4
-  progression: 2min-5-1
+key: G
+scale: dorian
+tempo: 130
+octave: 4
+progression: 2min-5-1
+instrument: trumpet
 
 # 可用的和弦进行
 progression_sources:

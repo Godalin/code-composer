@@ -11,12 +11,11 @@ bass_pattern: arpeggio
 blue_notes: false
 
 # 默认值
-defaults:
-  key: D
-  scale: xinjiang_minor  # 可自定义或用harmonic_minor/major
-  tempo: 110
-  octave: 4
-  progression: 1-4-5-1
+key: D
+scale: xinjiang_minor # 可自定义或用harmonic_minor/major
+tempo: 110
+octave: 4
+progression: 1-4-5-1
 
 # 可用的和弦进行
 progression_sources:

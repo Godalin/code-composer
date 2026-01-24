@@ -15,11 +15,11 @@
 import random
 from dataclasses import replace
 from fractions import Fraction
-from typing import List, Optional, Tuple, Dict
+from typing import Optional
 
 from .frontend import Token, TokenType
 from .styles import Style
-from .rhythms import RhythmPattern
+from .rhythms import choose_rhythm, RhythmWeight
 from .theory import (
     Pitch,
     Progression,
@@ -46,15 +46,14 @@ from .durations import duration_to_beats, fill_rests
 # ===== 小节生成函数 =====
 
 def generate_bar_melody(
-    chord: Chord,
-    rhythm_patterns: List[RhythmPattern],
-    rhythm_weights: List[int],
     bar_target_beats: Fraction,
-    motif_weights: List[MotifWeight],
+    rhythm_weights: list[RhythmWeight],
+    motif_weights: list[MotifWeight],
     octave: int,
+    chord: Chord,
     scale_pitches: ScalePitches,
-    supplement_pitches: List[Pitch],
-) -> List[List[Note]]:
+    supplement_pitches: list[Pitch],
+) -> list[list[Note]]:
     """为单个小节生成旋律音符组序列。
 
     参数：
@@ -68,18 +67,10 @@ def generate_bar_melody(
     - scale_pitches: 音阶音符列表。
 
     返回：
-    - List[List[Note]]：按节奏顺序排列的音符组（每个子列表可容纳和弦堆叠）。
+    - list[list[Note]]：按节奏顺序排列的音符组（每个子列表可容纳和弦堆叠）。
     """
-    if len(rhythm_patterns) > 1:
-        pattern_idx = random.choices(
-            range(len(rhythm_patterns)),
-            weights=rhythm_weights,
-            k=1
-        )[0]
-    else:
-        pattern_idx = 0
 
-    durations, accents = rhythm_patterns[pattern_idx]
+    durations, accents = choose_rhythm(rhythm_weights)
     
     # 选择动机类型
     motif_type = choose_motif_type(motif_weights)
@@ -89,7 +80,7 @@ def generate_bar_melody(
     
     # 将生成器音符与节奏、重音转换为 Note 列表
     volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
-    notes: List[List[Note]] = []
+    notes: list[list[Note]] = []
     for idx, dur in enumerate(durations):
         pitch = next(motif_gen)  # 从生成器获取下一个音符
         acc = accents[idx] if idx < len(accents) else 0
@@ -117,7 +108,7 @@ def build_phrases_skeleton(
     num_tokens: int,
     bars_per_token: int,
     progression: Progression,
-) -> List[Phrase]:
+) -> list[Phrase]:
     """构建乐句骨架（仅元数据，不含旋律/伴奏）。
 
     参数：
@@ -128,7 +119,7 @@ def build_phrases_skeleton(
     - progression: 和声进行列表，每项为 (chord_name, chord_notes)。
 
     返回：
-    - List[Phrase]：仅包含和声与小节元数据的乐句列表。
+    - list[Phrase]：仅包含和声与小节元数据的乐句列表。
     """
     phrases_list = []
     global_bar_idx = 1
@@ -181,20 +172,19 @@ def build_phrases_skeleton(
 # ===== 乐句内容填充函数 =====
 
 def fill_phrases_content(
-    tokens: List[Token],
-    phrases: List[Phrase],
+    tokens: list[Token],
+    phrases: list[Phrase],
     time_signature: str,
-    rhythm_patterns: List[RhythmPattern],
-    rhythm_weights: List[int],
+    rhythm_weights: list[RhythmWeight],
     bar_target_beats: Fraction,
-    motif_weights: List[MotifWeight],
+    motif_weights: list[MotifWeight],
     octave: int,
     bass_pattern_mode: str,
     scale_pitches: ScalePitches,
-    supplement_pitches: List[Pitch],
+    supplement_pitches: list[Pitch],
     ignore_bad: bool,
     instrument: str = "violin",
-) -> List[Phrase]:
+) -> list[Phrase]:
     """填充所有小节的旋律和伴奏内容"""
     phrases_with_content = []
 
@@ -209,30 +199,29 @@ def fill_phrases_content(
 
                 # 生成小节旋律
                 melody_notes = generate_bar_melody(
-                    span.chord,
-                    rhythm_patterns,
-                    rhythm_weights,
                     bar_target_beats,
+                    rhythm_weights,
                     motif_weights,
                     octave,
+                    span.chord,
                     scale_pitches,
                     supplement_pitches,
                 )
 
                 # 生成小节伴奏
                 bass_notes = gen_bar_bass(
-                    chord_var if not ignore_bad else span.chord,
-                    octave,
-                    bar_target_beats,
                     time_signature,
+                    bar_target_beats,
+                    octave,
+                    chord_var if not ignore_bad else span.chord,
                     bass_pattern_mode,
                 )
 
                 string_notes = gen_bar_bass(
-                    span.chord,
-                    octave,
-                    bar_target_beats,
                     time_signature,
+                    bar_target_beats,
+                    octave,
+                    span.chord,
                     "block",
                 )
 
@@ -265,47 +254,33 @@ def fill_phrases_content(
 
 def compose(
     style: Style,
-    tokens: List[Token],
+    tokens: list[Token],
     bars_per_phrase: int = 4,
     bars_per_token: int = 1,
     seed: Optional[int] = 42,
     parts: str = "both",
     ignore_bad: bool = True,
-    instrument: str = "violin",
-) -> Tuple[str, dict, Composition]:
+) -> tuple[str, dict, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
 
-    # 从 Style 对象获取所有配置
-    chord_progression_name = style.default_progression
-    key = style.default_key
-    scale = style.default_scale
-    octave = style.default_octave
-    tempo = style.default_tempo
-    bass_pattern = style.bass_pattern
-    motif_weights = style.motif_weights
-    use_blue_notes = style.blue_notes
-    bar_target_beats = style.bar_target_beats
-    rhythm_patterns = style.bar_patterns
-    rhythm_weights = style.bar_pattern_weights
-
     # 验证和声进行
-    available_progressions = get_available_progressions(scale, style.name)
-    if chord_progression_name not in available_progressions:
+    available_progressions = get_available_progressions(style.scale, style.name)
+    if style.progression not in available_progressions:
         raise ValueError(
-            f"在风格 '{style.name}' 中未知的和声进行: {chord_progression_name}。"
+            f"在风格 '{style.name}' 中未知的和声进行: {style.progression}"
             f"可用进行: {list(available_progressions.keys())}"
         )
 
     # 生成实际的和声进行
-    tonic_pitch = Pitch(key, 4)
+    tonic_pitch = Pitch(style.key, 4)
     progression = gen_progression(
         tonic=tonic_pitch,
-        scale=scale,
-        progression_name=chord_progression_name
+        scale=style.scale,
+        progression_name=style.progression
     )
     
     # 生成音阶音符列表（用于旋律生成）
-    scale_pitches = get_scale(tonic_pitch, scale)
+    scale_pitches = get_scale(tonic_pitch, style.scale)
 
     # TODO: get supplement Pitches
     supplement_pitches = []
@@ -320,12 +295,12 @@ def compose(
     # token 为空时的默认乐谱
     if not tokens:
         empty_comp = Composition(
-            tempo=tempo,
             style=style.name,
-            key=key,
-            scale=scale,
+            tempo=style.tempo,
+            key=style.key,
+            scale=style.scale,
         )
-        return f"{instrument}:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
+        return f"{style.instrument}:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
 
     num_tokens = len(tokens)
     num_token_groups = (num_tokens + bars_per_token - 1) // bars_per_token
@@ -348,24 +323,23 @@ def compose(
         tokens,
         phrases,
         style.time_signature,
-        rhythm_patterns,
-        rhythm_weights,
-        bar_target_beats,
-        motif_weights,
-        octave,
-        bass_pattern,
+        style.rhythm_weights,
+        style.bar_target_beats,
+        style.motif_weights,
+        style.octave,
+        style.bass_pattern,
         scale_pitches,
         supplement_pitches,
         ignore_bad,
-        instrument,
+        instrument=style.instrument
     )
 
     # 创建 Composition 对象
     comp = Composition(
-        tempo=tempo,
+        tempo=style.tempo,
         style=style.name,
-        key=key,
-        scale=scale,
+        key=style.key,
+        scale=style.scale,
         phrases=phrases_with_content,
         tokens=tokens,
     )
@@ -373,9 +347,9 @@ def compose(
     # 第三阶段：汇总 Alda 乐谱
     all_bars = comp.get_all_bars()
     insts = all_bars[0].parts.keys()
-    insts_parts: Dict[str, List[str]] = {}
+    insts_parts: dict[str, list[str]] = {}
     for inst in insts:
-        inst_vs: List[str] = []
+        inst_vs: list[str] = []
         for v in range(len(all_bars[0].parts[inst])):
             inst_all_bars = (note_groups_to_alda(bar.parts[inst][v]) for bar in all_bars)
             inst_vs.append(f"  V{v+1}: " + f"\n  V{v+1}: ".join(inst_all_bars))
@@ -383,7 +357,7 @@ def compose(
 
     alda_score: str = "\n\n".join((
         f"{inst}:\n"
-        f"  (tempo {tempo})\n"
+        f"  (tempo {style.tempo})\n"
         + "\n".join(insts_parts[inst])
     for inst in insts))
 
@@ -396,8 +370,8 @@ def compose(
         "tokens": num_tokens,
         "bars_per_phrase": bars_per_phrase,
         "bars_per_token": bars_per_token,
-        "progression": chord_progression_name,
-        "tempo": tempo,
+        "progression": style.progression,
+        "tempo": style.tempo,
     }
 
     return alda_score, metadata, comp

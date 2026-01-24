@@ -7,9 +7,7 @@ description: "适合现代流行音乐的风格"
 # 基础参数
 time_signature: 4/4
 bass_pattern: block
-blue_notes: false
 
-# 默认值
 key: C
 scale: major
 tempo: 120
@@ -26,6 +24,11 @@ progression_sources:
 
 # 节奏权重（引用rhythms配置文件中的pattern名称）
 rhythm_weights:
+  - pattern:
+      durations: ["4", "4", "4", "4"]
+      accents: [2, 1, 2, 1]
+    weight: 1000
+
   - { pattern: even_4, weight: 1 }
   - { pattern: half_2, weight: 1 }
   - { pattern: 4_2_4, weight: 2 }

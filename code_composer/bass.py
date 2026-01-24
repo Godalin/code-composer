@@ -49,25 +49,24 @@ class BassPattern(TypedDict):
 
 
 def gen_bass_from_template(
-    chord: Chord,
-    bass_octave: int,
+    time_signature: str,
     bar_target_beats: Fraction,
     bass_pattern: BassPattern,
-    time_signature: str,
-    velocity: int = 85,
+    volume: int,
+    octave: int,
+    chord: Chord,
 ) -> List[List[Note]]:
     """通用模板转低音生成函数"""
-    volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
+    volume_map = {i : volume + i * 5 for i in range(4) }
     rhythm_pattern = get_rhythm(time_signature, bass_pattern['rhythm'])
 
     groups : List[List[Note]] = []
     for idxs, (dur, vol) in zip(bass_pattern["pattern"], zip(*rhythm_pattern)):
         if idxs[0] == 0:
-            groups.append([Note(pitch=replace(p, octave=bass_octave),
-                duration=dur, velocity=volume_map[vol]) for p in chord])
+            groups.append([Note(pitch=replace(p, octave=octave),                duration=dur, velocity=volume_map[vol]) for p in chord])
         else:
             groups.append([Note(pitch=replace(chord[(i-1) % len(chord)],    
-                octave=bass_octave), duration=dur, velocity=volume_map[vol])
+                octave=octave), duration=dur, velocity=volume_map[vol])
                     for i in idxs])
     
     return _finish_bar(groups, rhythm_pattern[0], bar_target_beats)
@@ -87,18 +86,19 @@ def list_bass_patterns(time_signature: str):
 
 
 def gen_bar_bass(
-    chord: Chord,
-    octave: int,
-    bar_target_beats: Fraction,
     time_signature: str,
+    bar_target_beats: Fraction,
+    octave: int,
+    chord: Chord,
     bass_mode: str = 'arpeggio',
 ) -> List[List[Note]]:
     """根据低音模式名称生成一个小节的低音"""
     bass_octave = octave - 1
-    
-    # 查找对应的低音生成函数
     return gen_bass_from_template(
-        chord, bass_octave, bar_target_beats,
-        _get_bass_library(time_signature)[bass_mode],
         time_signature,
+        bar_target_beats,
+        _get_bass_library(time_signature)[bass_mode],
+        70,
+        bass_octave,
+        chord,
     )

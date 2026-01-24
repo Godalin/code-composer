@@ -104,8 +104,15 @@
       "required": ["pattern", "weight"],
       "properties": {
         "pattern": {
-          "type": "string",
-          "description": "节奏型名称（引用 rhythms 配置）"
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "节奏型名称（引用 rhythms 配置）"
+            },
+            {
+              "$ref": "./rhythms.schema.json#/definitions/RhythmPattern"
+            }
+          ]
         },
         "weight": {
           "type": "integer",
@@ -120,8 +127,15 @@
       "required": ["type", "weight"],
       "properties": {
         "type": {
-          "type": "string",
-          "description": "动机类型"
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "动机类型"
+            },
+            {
+              "$ref": "./motifs.schema.json#/definitions/MotifPattern"
+            }
+          ]
         },
         "weight": {
           "type": "integer",

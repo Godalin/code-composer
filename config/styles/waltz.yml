@@ -10,12 +10,11 @@ bass_pattern: waltz_oom_pah
 blue_notes: false
 
 # 默认值
-defaults:
-  key: C
-  scale: major
-  tempo: 100
-  octave: 4
-  progression: 1-4-5-4
+key: C
+scale: major
+tempo: 100
+octave: 4
+progression: 1-4-5-4
 
 # 可用的和弦进行
 progression_sources:

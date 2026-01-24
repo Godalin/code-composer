@@ -10,12 +10,11 @@ bass_pattern: arpeggio
 blue_notes: false
 
 # 默认值
-defaults:
-  key: G
-  scale: major
-  tempo: 130
-  octave: 4
-  progression: 1-6min-4-5
+key: G
+scale: major
+tempo: 130
+octave: 4
+progression: 1-6min-4-5
 
 # 可用的和弦进行（引用progressions配置文件）
 progression_sources:

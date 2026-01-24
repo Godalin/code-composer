@@ -9,10 +9,11 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from typing import Tuple
 
 from .composer import compose
 from .frontend import compile_c_code
-from .styles import create_style_with_overrides, get_style, list_styles
+from .styles import create_style_with, get_style, list_styles
 from .config_loader import load_scales, list_available_bass_patterns
 from .exporter import export_to_midi, midi_to_mp3, play_alda_code
 from .structures import print_composition_tree
@@ -46,7 +47,6 @@ def create_parser():
         '''
     )
     
-    # 输入参数
     input_group = parser.add_mutually_exclusive_group(required=False)
     input_group.add_argument(
         '-f', '--file',
@@ -68,7 +68,6 @@ def create_parser():
         help='源代码语言（默认自动判断）'
     )
 
-    # 新增：音乐调与音阶
     parser.add_argument(
         '--key',
         type=str,
@@ -116,7 +115,6 @@ def create_parser():
         help='导出所有格式（.alda、.mid、.mp3）'
     )
     
-    # 音乐参数
     parser.add_argument(
         '--chord',
         type=str,
@@ -171,19 +169,17 @@ def create_parser():
     parser.add_argument(
         '--parts',
         type=str,
-        choices=['melody', 'accompaniment', 'both'],
+        choices=['melody', 'bass', 'both'],
         default='both',
-        help='输出部分：melody（仅旋律 V1）、accompaniment（仅伴奏 V2）、both（两者，默认）'
+        help='输出部分：melody（仅旋律 V1）bass（仅低音 V2）both（两者，默认）'
     )
     
-    # 其他选项
     parser.add_argument(
         '-v', '--verbose',
         action='store_true',
         help='显示详细输出信息'
     )
 
-    # 调试选项：打印作品树形信息
     parser.add_argument(
         '--debug',
         action='store_true',
@@ -205,7 +201,7 @@ def create_parser():
     parser.add_argument(
         '--instrument',
         type=str,
-        default='violin',
+        default=None,
         help='使用的乐器'
     )
 
@@ -264,7 +260,7 @@ def play_audio(alda_file: str, verbose: bool = False) -> bool:
         return False
 
 
-def read_source_file(filepath: str) -> tuple[str, str]:
+def read_source_file(filepath: str) -> Tuple[str, str]:
     """读取源代码文件，返回 (代码, 语言)"""
     path = Path(filepath)
     
@@ -308,7 +304,7 @@ def determine_output_path(output: str, format_type: str) -> str:
         return str(base_path)
 
 
-def main():
+def main() -> None:
     """主命令行入口"""
     parser = create_parser()
     args = parser.parse_args()
@@ -325,11 +321,11 @@ def main():
     
     # 应用默认值（如果用户未指定）
     if args.key is None:
-        args.key = style_obj.default_key
+        args.key = style_obj.key
     if args.scale is None:
-        args.scale = style_obj.default_scale
+        args.scale = style_obj.scale
     if args.tempo is None:
-        args.tempo = style_obj.default_tempo
+        args.tempo = style_obj.tempo
     if args.chord is None:
         args.chord = get_default_progression(args.scale, args.style)
     
@@ -348,8 +344,7 @@ def main():
     if args.output is None:
         # 用户显式要求不播放但也不输出文件，直接报错
         if args.no_play:
-            print("❌ 错误: 使用 --no-play 时必须通过 -o 指定输出文件。", file=sys.stderr)
-            sys.exit(1)
+            parser.error("❌ 错误: 使用 --no-play 时必须通过 -o 指定输出文件。")
 
         # 未禁用播放则使用临时目录输出并自动播放
         use_temp_file = True
@@ -427,14 +422,14 @@ def main():
             
             # 编译源码并构造 Style
             tokens = compile_c_code(source)
-            style_obj = create_style_with_overrides(
+            style_obj = create_style_with(
                 args.style,
                 key=args.key,
                 scale=args.scale,
                 tempo=args.tempo,
-                octave=None,
-                chord_progression=args.chord,
+                progression=args.chord,
                 bass_pattern=args.bass_pattern,
+                instrument=args.instrument,
             )
             alda_score, metadata, comp = compose(
                 style=style_obj,
@@ -442,7 +437,6 @@ def main():
                 seed=args.seed,
                 parts=args.parts,
                 ignore_bad=args.ignore_bad,
-                instrument=args.instrument,
             )
             
             # 保存 Alda 文件
@@ -484,14 +478,14 @@ def main():
             
             # 编译源码并构造 Style
             tokens = compile_c_code(source)
-            style_obj = create_style_with_overrides(
+            style_obj = create_style_with(
                 args.style,
                 key=args.key,
                 scale=args.scale,
                 tempo=args.tempo,
-                octave=None,
-                chord_progression=args.chord,
+                progression=args.chord,
                 bass_pattern=args.bass_pattern,
+                instrument=args.instrument,
             )
             alda_score, metadata, comp = compose(
                 style=style_obj,
@@ -499,7 +493,6 @@ def main():
                 seed=args.seed,
                 parts=args.parts,
                 ignore_bad=args.ignore_bad,
-                instrument=args.instrument,
             )
             
             # 保存 Alda 文件

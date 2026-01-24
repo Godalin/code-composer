@@ -25,7 +25,7 @@ from .exporter import (
     midi_to_mp3,
     play_alda_file,
 )
-from .styles import create_style_with_overrides
+from .styles import create_style_with
 from .structures import (
     Bar,
     ChordSpan,
@@ -56,7 +56,7 @@ __all__ = [
     "Note",
     # Printers
     "print_composition_tree",
-    "create_style_with_overrides",
+    "create_style_with",
     "export_to_midi",
     "midi_to_mp3",
     "play_alda_file",

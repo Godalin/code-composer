@@ -24,7 +24,7 @@ motifs:
   random:
     name: "重复"
     pattern: [[0]]
-  
+
   # 古典的动机
   classic1:
     name: "古典1"
