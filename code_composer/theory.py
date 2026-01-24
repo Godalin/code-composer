@@ -547,8 +547,8 @@ def _get_all_progressions() -> Dict[str, Dict[str, str]]:
             'major': load_progressions('progressions/major.yml'),
             'minor': load_progressions('progressions/minor.yml'),
             'dorian': load_progressions('progressions/dorian.yml'),
-            'pentatonic': load_progressions('progressions/pentatonic.yml'),
-            'minor_pentatonic': load_progressions('progressions/pentatonic.yml'),  # 共用五声
+            'pentatonic_major': load_progressions('progressions/pentatonic.yml'),
+            'pentatonic_minor': load_progressions('progressions/pentatonic.yml'),  # 共用五声
             'gypsy_minor': load_progressions('progressions/gypsy.yml'),
             'gypsy_major': load_progressions('progressions/gypsy.yml'),
             'jazz': load_progressions('progressions/jazz.yml'),

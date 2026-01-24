@@ -260,7 +260,7 @@ def compose(
     seed: Optional[int] = 42,
     parts: str = "both",
     ignore_bad: bool = True,
-) -> tuple[str, dict, Composition]:
+) -> tuple[str, Composition]:
     """从 token 流和风格生成完整钢琴乐曲"""
 
     # 验证和声进行
@@ -294,13 +294,7 @@ def compose(
 
     # token 为空时的默认乐谱
     if not tokens:
-        empty_comp = Composition(
-            style=style.name,
-            tempo=style.tempo,
-            key=style.key,
-            scale=style.scale,
-        )
-        return f"{style.instrument}:\n  o4 c1", {"phrases": 0, "bars": 0, "tokens": 0}, empty_comp
+        raise ValueError("空的 Token Stream ... 解析可能出错了？")
 
     num_tokens = len(tokens)
     num_token_groups = (num_tokens + bars_per_token - 1) // bars_per_token
@@ -364,14 +358,4 @@ def compose(
     # 打印调试信息
     print(comp.debug_summary())
 
-    metadata = {
-        "phrases": comp.num_phrases,
-        "bars": comp.num_bars,
-        "tokens": num_tokens,
-        "bars_per_phrase": bars_per_phrase,
-        "bars_per_token": bars_per_token,
-        "progression": style.progression,
-        "tempo": style.tempo,
-    }
-
-    return alda_score, metadata, comp
+    return alda_score, comp

@@ -4,68 +4,74 @@
 
 patterns:
   # 基础3/4节奏
+  # TODO
+  whole:
+    name: "完全节奏"
+    durations: ["4", "4", "4"]
+    accents: [2, 1, 1]
+
   even_3:
     name: "三个四分音符"
-    durations: ['4', '4', '4']
-    accents:   [2, 1, 1]
-  
+    durations: ["4", "4", "4"]
+    accents: [2, 1, 1]
+
   2_4:
     name: "二分+四分"
-    durations: ['2', '4']
-    accents:   [2, 1]
-  
+    durations: ["2", "4"]
+    accents: [2, 1]
+
   4_8_8_4:
     name: "四分+两个八分+四分"
-    durations: ['4', '8', '8', '4']
-    accents:   [2, 0, 0, 1]
-  
+    durations: ["4", "8", "8", "4"]
+    accents: [2, 0, 0, 1]
+
   8_8_4_4:
     name: "两个八分+两个四分"
-    durations: ['8', '8', '4', '4']
-    accents:   [2, 0, 1, 1]
-  
+    durations: ["8", "8", "4", "4"]
+    accents: [2, 0, 1, 1]
+
   synco_8_4_8_4:
     name: "切分: 八分+四分+八分+四分"
-    durations: ['8', '4', '8', '4']
-    accents:   [2, 3, 0, 1]
-  
+    durations: ["8", "4", "8", "4"]
+    accents: [2, 3, 0, 1]
+
   4_2:
     name: "四分+二分"
-    durations: ['4', '2']
-    accents:   [2, 1]
-  
+    durations: ["4", "2"]
+    accents: [2, 1]
+
   8x6:
     name: "六个八分音符"
-    durations: ['8', '8', '8', '8', '8', '8']
-    accents:   [2, 0, 1, 0, 1, 0]
-  
+    durations: ["8", "8", "8", "8", "8", "8"]
+    accents: [2, 0, 1, 0, 1, 0]
+
   # 6/8拍子节奏（视为3/4的变体）
   8x6_beat:
     name: "6/8: 六个八分音符（两组三连音）"
-    durations: ['8', '8', '8', '8', '8', '8']
-    accents:   [2, 0, 0, 1, 0, 0]
-  
+    durations: ["8", "8", "8", "8", "8", "8"]
+    accents: [2, 0, 0, 1, 0, 0]
+
   dot4_8_8_dot4:
     name: "6/8: 附点四分+两个八分+附点四分"
-    durations: ['4', '8', '8', '4']
-    accents:   [2, 0, 0, 1]
-  
+    durations: ["4", "8", "8", "4"]
+    accents: [2, 0, 0, 1]
+
   dot4_dot4_8_8:
     name: "6/8: 两个附点四分+两个八分"
-    durations: ['4', '4', '8', '8']
-    accents:   [2, 1, 0, 0]
-  
+    durations: ["4", "4", "8", "8"]
+    accents: [2, 1, 0, 0]
+
   8_8_dot4_8_8:
     name: "6/8: 两个八分+附点四分+两个八分"
-    durations: ['8', '8', '4', '8', '8']
-    accents:   [2, 0, 0, 1, 0]
-  
+    durations: ["8", "8", "4", "8", "8"]
+    accents: [2, 0, 0, 1, 0]
+
   dot4_8_8_8_8:
     name: "6/8: 附点四分+四个八分"
-    durations: ['4', '8', '8', '8', '8']
-    accents:   [2, 0, 0, 1, 0]
-  
+    durations: ["4", "8", "8", "8", "8"]
+    accents: [2, 0, 0, 1, 0]
+
   8_8_8_dot4_8:
     name: "6/8: 三个八分+附点四分+八分"
-    durations: ['8', '8', '8', '4', '8']
-    accents:   [2, 0, 0, 1, 0]
+    durations: ["8", "8", "8", "4", "8"]
+    accents: [2, 0, 0, 1, 0]

@@ -102,20 +102,6 @@ def create_parser():
     )
     
     parser.add_argument(
-        '--format',
-        type=str,
-        choices=['alda', 'midi', 'mp3'],
-        default='mp3',
-        help='输出格式（默认：mp3）'
-    )
-    
-    parser.add_argument(
-        '--export-all',
-        action='store_true',
-        help='导出所有格式（.alda、.mid、.mp3）'
-    )
-    
-    parser.add_argument(
         '--chord',
         type=str,
         default=None,  # 改为 None，在运行时根据音阶自动选择
@@ -319,16 +305,6 @@ def main() -> None:
         print(f"❌ 错误: 未知的风格: {args.style}", file=sys.stderr)
         sys.exit(1)
     
-    # 应用默认值（如果用户未指定）
-    if args.key is None:
-        args.key = style_obj.key
-    if args.scale is None:
-        args.scale = style_obj.scale
-    if args.tempo is None:
-        args.tempo = style_obj.tempo
-    if args.chord is None:
-        args.chord = get_default_progression(args.scale, args.style)
-    
     if args.verbose:
         print(f"🎵 使用风格: {args.style}")
         print(f"   调性: {args.key}, 音阶: {args.scale}, 速度: {args.tempo} BPM")
@@ -408,122 +384,53 @@ def main() -> None:
             print(f"🔍 检测到语言: {lang.upper()}")
             print(f"📝 代码行数: {len(source.splitlines())}")
         
-        # 生成音乐
-        if args.export_all:
-            # 导出所有格式
-            base_output = args.output
-            
-            if args.verbose:
-                print(f"\n🎼 生成所有格式...")
-            
-            alda_file = determine_output_path(base_output, 'alda')
-            midi_file = determine_output_path(base_output, 'midi')
-            mp3_file = determine_output_path(base_output, 'mp3')
-            
-            # 编译源码并构造 Style
-            tokens = compile_c_code(source)
-            style_obj = create_style_with(
-                args.style,
-                key=args.key,
-                scale=args.scale,
-                tempo=args.tempo,
-                progression=args.chord,
-                bass_pattern=args.bass_pattern,
-                instrument=args.instrument,
-            )
-            alda_score, metadata, comp = compose(
-                style=style_obj,
-                tokens=tokens,
-                seed=args.seed,
-                parts=args.parts,
-                ignore_bad=args.ignore_bad,
-            )
-            
-            # 保存 Alda 文件
-            with open(alda_file, 'w') as f:
-                f.write(alda_score)
-            print(f"✓ 钢琴曲已保存到: {alda_file}")
-            
-            # 导出 MIDI
-            export_to_midi(alda_file, midi_file)
-            
-            # 导出 MP3
-            sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS.sf2"
-            midi_to_mp3(midi_file, mp3_file, str(sf_file))
-            
-            print(f"✓ 生成成功!")
-            print(f"  • Alda:  {alda_file}")
-            print(f"  • MIDI:  {midi_file}")
-            print(f"  • MP3:   {mp3_file}")
-            print(f"  • 小节数: {metadata['bars']}")
 
-            # 调试输出：作品树形结构
-            if args.debug:
-                print("\n[DEBUG] 作品树形结构:")
-                print("-" * 80)
-                print(print_composition_tree(comp))
-            
-            # 自动播放 Alda
-            if not args.no_play:
-                print()
-                play_audio(alda_file, verbose=args.verbose)
+        # ===== 生成音乐 =====
+        if args.verbose:
+            print(f"\n🎼 生成 {args.format.upper()} 格式...")
         
-        else:
-            # 单一格式导出
-            output_file = determine_output_path(args.output, args.format)
-            alda_file = determine_output_path(args.output, 'alda')
-            
-            if args.verbose:
-                print(f"\n🎼 生成 {args.format.upper()} 格式...")
-            
-            # 编译源码并构造 Style
-            tokens = compile_c_code(source)
-            style_obj = create_style_with(
-                args.style,
-                key=args.key,
-                scale=args.scale,
-                tempo=args.tempo,
-                progression=args.chord,
-                bass_pattern=args.bass_pattern,
-                instrument=args.instrument,
-            )
-            alda_score, metadata, comp = compose(
-                style=style_obj,
-                tokens=tokens,
-                seed=args.seed,
-                parts=args.parts,
-                ignore_bad=args.ignore_bad,
-            )
-            
-            # 保存 Alda 文件
-            with open(alda_file, 'w') as f:
-                f.write(alda_score)
-            
-            # 根据格式要求进行导出
-            if args.format == 'alda':
-                output_file = alda_file
-            elif args.format == 'midi':
-                export_to_midi(alda_file, output_file)
-            elif args.format == 'mp3':
-                midi_file = output_file.replace('.mp3', '.mid')
-                export_to_midi(alda_file, midi_file)
-                sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS.sf2"
-                print(sf_file)
-                midi_to_mp3(midi_file, output_file, str(sf_file))
-            
-            print(f"✓ 生成成功!")
-            print(f"  📁 输出文件: {output_file}")
-
-            # 调试输出：作品树形结构
-            if args.debug:
-                print("\n[DEBUG] 作品树形结构:")
-                print("-" * 80)
-                print(print_composition_tree(comp))
-            
-            # 自动播放（总是播放 Alda 文件）
-            if not args.no_play:
-                print()
-                play_audio(alda_file, verbose=args.verbose)
+        # 编译源码并构造 Style
+        tokens = compile_c_code(source)
+        style_obj = create_style_with(
+            args.style,
+            key=args.key,
+            scale=args.scale,
+            tempo=args.tempo,
+            progression=args.chord,
+            bass_pattern=args.bass_pattern,
+            instrument=args.instrument,
+        )
+        alda_score, comp = compose(
+            style=style_obj,
+            tokens=tokens,
+            seed=args.seed,
+            parts=args.parts,
+            ignore_bad=args.ignore_bad,
+        )
+        # 保存 Alda 文件
+        alda_file = determine_output_path(args.output, 'alda')
+        midi_file = determine_output_path(args.output, "midi")
+        mp3_file = determine_output_path(args.output, "mp3")
+        sf_file = Path(__file__).parent.parent / "sf" / "GeneralUser-GS.sf2"
+        
+        with open(alda_file, 'w') as f:
+            f.write(alda_score)
+        
+        # 根据格式要求进行导出
+        export_to_midi(alda_file, midi_file)
+        midi_to_mp3(midi_file, mp3_file, str(sf_file))
+        
+        print(f"✓ 生成成功!")
+        
+        # 调试输出：作品树形结构
+        if args.debug:
+            print("\n[DEBUG] 作品树形结构:")
+            print("-" * 80)
+            print(print_composition_tree(comp))
+        
+        # 自动播放（总是播放 Alda 文件）
+        if not args.no_play:
+            play_audio(alda_file, verbose=args.verbose)
     
     except FileNotFoundError as e:
         print(f"❌ 错误: {e}", file=sys.stderr)

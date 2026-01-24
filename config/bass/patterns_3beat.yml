@@ -33,3 +33,8 @@ bass:
     name: "持续音型"
     pattern: [[0], [0], [2]]
     rhythm: even_3
+
+  waltz_oom_pah:
+    name: "华尔兹"
+    pattern: [[0], [2], [2]]
+    rhythm: even_3
