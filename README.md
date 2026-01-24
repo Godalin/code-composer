@@ -112,26 +112,27 @@ options:
   --lang {c,python,auto}
                         源代码语言（默认自动判断）
   --key KEY             乐曲调（如 C, G, D#, Bb，默认使用风格的默认值）
-  --scale SCALE         音阶/调式（默认使用风格的默认值，可用: major, minor, harmonic_minor, melodic_minor, dorian, phrygian, lydian, mixolydian, pentatonic_major, pentatonic_minor, chinese_pentatonic, blues, gypsy_minor,
-                        gypsy_major, hijaz, hijaz_kar, bayati, nahawand, kurd, rast, saba, xinjiang_minor, xinjiang_major, xinjiang_aug）
+  --scale SCALE         音阶/调式（默认使用风格的默认值，可用: major, minor, harmonic_minor, melodic_minor, dorian, phrygian, lydian,
+                        mixolydian, pentatonic_major, pentatonic_minor, chinese_pentatonic, blues, gypsy_minor,
+                        gypsy_major, hijaz, hijaz_kar, bayati, nahawand, kurd, rast, saba, xinjiang_minor,
+                        xinjiang_major, xinjiang_aug, japanese_pentatonic, miyako_bushi, ritsu, minyo,
+                        russian_folk_minor, russian_folk_major, soviet_march）
   --test-scale          测试模式：只播放当前音阶（覆盖2个八度），不生成旋律
   --test-chord          测试模式：只播放当前和声进行（分解和弦），不生成旋律
   -o, --output OUTPUT   输出文件名（不含扩展名）或路径。如不指定则只播放不保存
-  --format {alda,midi,mp3}
-                        输出格式（默认：mp3）
-  --export-all          导出所有格式（.alda、.mid、.mp3）
   --chord CHORD         和声进行（不指定则根据音阶自动选择推荐进行）
-  --style STYLE         音乐风格（可用: default, minuet, waltz, jazz, gypsy, arabic, gothic, classic, chinese, xinjiang）
+  --style STYLE         音乐风格（可用: default, minuet, test, waltz, jazz, gypsy, arabic, gothic, japanese, classic,
+                        chinese, soviet, xinjiang）
   --tempo TEMPO         乐曲速度 BPM（默认：120，waltz/minuet 为 160）
-  --bass-pattern {block,double,arpeggio,pendulum,waltz_oom_pah,minuet_duple}
+  --bass-pattern {arpeggio,block,walking,pendulum,pop,marching,double,waltz_oom_pah,ostinato}
                         低音模式（默认使用风格的低音模式）
   --bars-per-phrase BARS_PER_PHRASE
                         每个乐句的小节数（默认：4）
   --bars-per-token {1,2}
                         一个 token 覆盖的小节数（1 或 2，默认 1）
   --seed SEED           随机数种子（默认：42，用于复现结果）
-  --parts {melody,accompaniment,both}
-                        输出部分：melody（仅旋律 V1）、accompaniment（仅伴奏 V2）、both（两者，默认）
+  --parts {melody,bass,both}
+                        输出部分：melody（仅旋律 V1）bass（仅低音 V2）both（两者，默认）
   -v, --verbose         显示详细输出信息
   --debug               生成后打印作品的树形结构信息
   --no-play             生成后不自动播放音乐
