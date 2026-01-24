@@ -11,7 +11,7 @@ dependencies = [
 authors = [{ name = "godalin" }]
 
 [project.urls]
-Repository = "https://github.com/godalin/music"
+Repository = "https://github.com/godalin/code-composer"
 
 [tool.uv]
 managed = true
