@@ -19,7 +19,7 @@ from typing import Optional
 
 from .frontend import Token, TokenType
 from .styles import Style
-from .rhythms import choose_rhythm, RhythmWeight
+from .rhythms import RhythmWeight
 from .theory import (
     Pitch,
     Progression,
@@ -38,66 +38,9 @@ from .structures import (
     Note,
     note_groups_to_alda,
 )
-from .motif import create_motif_generator, choose_motif_type, MotifWeight
+from .motif import MotifWeight
+from .melody import gen_bar_melody, gen_bar_melody_fancy
 from .bass import gen_bar_bass
-from .durations import duration_to_beats, fill_rests
-
-
-# ===== 小节生成函数 =====
-
-def generate_bar_melody(
-    bar_target_beats: Fraction,
-    rhythm_weights: list[RhythmWeight],
-    motif_weights: list[MotifWeight],
-    octave: int,
-    chord: Chord,
-    scale_pitches: ScalePitches,
-    supplement_pitches: list[Pitch],
-) -> list[list[Note]]:
-    """为单个小节生成旋律音符组序列。
-
-    参数：
-    - chord: 当前和弦的 Pitch 对象列表。
-    - rhythm_patterns: 可选的节奏模式列表，每个模式为 (durations, accents)。
-    - rhythm_weights: 与节奏模式一一对应的权重，用于随机选型。
-    - bar_target_beats: 小节目标拍数，用于补齐休止符。
-    - motif_weights: 动机类型权重；None 表示均匀选择。
-    - octave: 旋律所在八度提示。
-    - use_blue_notes: 是否允许补充音（暂不使用）。
-    - scale_pitches: 音阶音符列表。
-
-    返回：
-    - list[list[Note]]：按节奏顺序排列的音符组（每个子列表可容纳和弦堆叠）。
-    """
-
-    durations, accents = choose_rhythm(rhythm_weights)
-    
-    # 选择动机类型
-    motif_type = choose_motif_type(motif_weights)
-    
-    # 创建动机生成器
-    motif_gen = create_motif_generator(chord, scale_pitches, motif_type, octave)
-    
-    # 将生成器音符与节奏、重音转换为 Note 列表
-    volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
-    notes: list[list[Note]] = []
-    for idx, dur in enumerate(durations):
-        pitch = next(motif_gen)  # 从生成器获取下一个音符
-        acc = accents[idx] if idx < len(accents) else 0
-        vel = volume_map.get(acc, 80)
-        notes.append([Note(pitch=pitch, velocity=vel, duration=dur)])
-    
-    # 补齐不足的拍子
-    target = bar_target_beats
-    total = sum(duration_to_beats(d) for d in durations)
-    if total < target:
-        # 用休止符补齐
-        rest_parts = fill_rests(target - total)
-        for r in rest_parts:
-            duration = r
-            notes.append([Note(pitch=None, velocity=0, duration=duration)])
-
-    return notes
 
 
 # ===== 乐句骨架构建函数 =====
@@ -198,10 +141,16 @@ def fill_phrases_content(
                 chord_var = vary_chord(span.chord, tokens[span.token_idx].level)
 
                 # 生成小节旋律
-                melody_notes = generate_bar_melody(
+                melody_notes = gen_bar_melody(
                     bar_target_beats,
                     rhythm_weights,
                     motif_weights,
+                    octave,
+                    span.chord,
+                    scale_pitches,
+                    supplement_pitches,
+                ) if tokens[span.token_idx].level <= 0 else gen_bar_melody_fancy(
+                    bar_target_beats,
                     octave,
                     span.chord,
                     scale_pitches,
