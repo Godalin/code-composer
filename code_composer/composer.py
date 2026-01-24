@@ -149,7 +149,7 @@ def fill_phrases_content(
                     span.chord,
                     scale_pitches,
                     supplement_pitches,
-                ) if tokens[span.token_idx].level <= 0 else gen_bar_melody_fancy(
+                ) if ignore_bad or tokens[span.token_idx].level <= 0 else gen_bar_melody_fancy(
                     bar_target_beats,
                     octave,
                     span.chord,
