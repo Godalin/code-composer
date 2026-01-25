@@ -7,7 +7,7 @@
 
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from .rhythms import RhythmWeight, RhythmEntry
 from .motif import MotifWeight

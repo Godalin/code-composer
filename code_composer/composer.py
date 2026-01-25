@@ -213,12 +213,12 @@ def compose(
     """从 token 流和风格生成完整钢琴乐曲"""
 
     # 验证和声进行
-    available_progressions = get_available_progressions(style.scale, style.name)
-    if style.progression not in available_progressions:
-        raise ValueError(
-            f"在风格 '{style.name}' 中未知的和声进行: {style.progression}"
-            f"可用进行: {list(available_progressions.keys())}"
-        )
+    # available_progressions = get_available_progressions(style.scale, style.name)
+    # if style.progression not in available_progressions:
+    #     raise ValueError(
+    #         f"在风格 '{style.name}' 中未知的和声进行: {style.progression}"
+    #         f"可用进行: {list(available_progressions.keys())}"
+    #     )
 
     # 生成实际的和声进行
     tonic_pitch = Pitch(style.key, 4)
