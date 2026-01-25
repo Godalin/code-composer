@@ -51,7 +51,6 @@ output/
 
 # UV and environment management
 .uv/
-.python-version
 
 # direnv
 .direnv/
