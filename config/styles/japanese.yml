@@ -16,6 +16,7 @@ scale: japanese_pentatonic # 可自定义或用现有五声音阶
 tempo: 100
 octave: 4
 progression: 1-2-5-1
+instrument: guitar
 
 # 可用的和弦进行
 progression_sources:

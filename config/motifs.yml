@@ -28,10 +28,25 @@ motifs:
   # 古典的动机
   classic1:
     name: "古典1"
-    pattern: [[1, 1, 1, -1]]
+    pattern: [[1, 1, -1]]
   classic2:
     name: "古典2"
-    pattern: [[1, -1, 1, 1]]
+    pattern: [[1, -1, -1]]
   classic3:
     name: "古典3"
-    pattern: [[1, -1, 2, -1]]
+    pattern: [[-1, 2, -1]]
+  classic4:
+    name: "古典4"
+    pattern: [[1, -2, 1]]
+  classic5:
+    name: "古典5"
+    pattern: [[-1, -1, 1]]
+  classic6:
+    name: "古典6"
+    pattern: [[-1, 1, 1]]
+  classicB9:
+    name: "古典B9"
+    pattern: [[0, 0, -1, 3, 0, 0, -1]]
+  classicB9r:
+    name: "古典B9"
+    pattern: [[0, 0, 1, -3, 0, 0, 1]]

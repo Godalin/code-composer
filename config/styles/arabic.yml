@@ -8,11 +8,12 @@ description: "中东/阿拉伯风格，使用 Hijaz 等调式，强调旋律装�
 time_signature: 4/4
 bass_pattern: arpeggio
 blue_notes: false
+instrument: guitar
 
 # 默认值
 key: D
 scale: hijaz
-tempo: 80
+tempo: 100
 octave: 4
 progression: 1-4-1-5
 

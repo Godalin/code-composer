@@ -1,0 +1,92 @@
+# Indian 风格配置
+
+name: indian
+
+display_name: "印度风格"
+description: "融合印度传统音乐元素，强调旋律装饰、持续音（Drone）、复杂节奏与拉加音阶。适合表现异域、神秘与灵性氛围。"
+
+time_signature: 4/4
+bass_pattern: block
+blue_notes: true
+
+key: C
+tempo: 120
+octave: 4
+scale: raga_bhairav
+progression: 1-b2-5-1
+instrument: sitar
+
+progression_sources:
+  - progressions/indian.yml
+
+rhythm_weights:
+  - pattern:
+      durations: ["4", "4", "4", "4"]
+      accents: [2, 1, 2, 1]
+    weight: 10
+
+  - { pattern: 8x8, weight: 1000 }
+
+  - pattern:
+      durations:
+        [
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+        ]
+      accents: [2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1]
+    weight: 1000
+
+  - pattern:
+      durations:
+        ["8", "16", "16", "8", "16", "16", "8", "16", "16", "8", "16", "16"]
+      accents: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations:
+        ["16", "16", "8", "16", "16", "8", "16", "16", "8", "16", "16", "8"]
+      accents: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["2", "16", "16", "8", "16", "16", "8"]
+      accents: [2, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["2", "8", "16", "16", "8", "16", "16"]
+      accents: [2, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["8", "16", "16", "8", "16", "16", "2"]
+      accents: [2, 1, 1, 2, 1, 1, 2]
+    weight: 2000
+
+  - pattern:
+      durations: ["16", "16", "8", "16", "16", "8", "2"]
+      accents: [2, 1, 1, 2, 1, 1, 2]
+    weight: 2000
+
+  - { pattern: whole, weight: 2 }
+  - { pattern: two_half, weight: 2 }
+  - { pattern: 4_2_4, weight: 2 }
+
+motif_weights:
+  - { type: ascending, weight: 40 }
+  - { type: descending, weight: 20 }
+  - { type: arch, weight: 100 }

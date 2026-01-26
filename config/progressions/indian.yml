@@ -1,0 +1,28 @@
+# 印度风格和弦进行库
+# 结构参考阿拉伯风格，突出持续音、拉加特征与简单和声
+
+progressions:
+  # 持续音/Drone 进行
+  1-1-1-1:
+    name: "Drone 持续音进行"
+    description: "持续主音（I），突出印度音乐的 Drone 特征，常用于塔布拉和坦普拉伴奏。"
+
+  1-b2-1-5:
+    name: "Bhairav 拉加进行"
+    description: "Bhairav 拉加常用进行，包含♭2特征音，适合晨曲。"
+
+  1-4-5-1:
+    name: "Kafi 拉加进行"
+    description: "Kafi 拉加常用进行，适合民谣与轻快风格。"
+
+  1-b6-5-1:
+    name: "Todi 拉加进行"
+    description: "Todi 拉加复杂进行，适合表现深沉与灵性。"
+
+  1-5-1-1:
+    name: "主音-属音进行"
+    description: "主音与属音交替，常见于印度古典音乐。"
+
+  1-4-1-1:
+    name: "主音-下属音进行"
+    description: "主音与下属音交替，适合表现柔和氛围。"

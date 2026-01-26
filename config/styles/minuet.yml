@@ -8,6 +8,7 @@ description: "典雅精致的巴洛克小步舞曲风格"
 time_signature: 3/4
 bass_pattern: minuet_duple
 blue_notes: false
+instrument: piano
 
 # 默认值
 key: C

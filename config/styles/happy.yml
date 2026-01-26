@@ -1,0 +1,129 @@
+# 默认风格配置（现代流行）
+
+name: happy
+
+# 基础参数
+time_signature: 4/4
+bass_pattern: pop
+
+key: C
+scale: major
+tempo: 120
+octave: 4
+progression: 1-6min-4-5
+instrument: piano
+
+# 可用的和弦进行（引用progressions配置文件）
+progression_sources:
+  - progressions/major.yml
+  - progressions/minor.yml
+  - progressions/dorian.yml
+  - progressions/pentatonic.yml
+  - progressions/gypsy.yml
+
+# 节奏权重（引用rhythms配置文件中的pattern名称）
+rhythm_weights:
+  - pattern:
+      durations: ["4", "4", "4", "4"]
+      accents: [2, 1, 2, 1]
+    weight: 10
+
+  - { pattern: 8x8, weight: 1000 }
+
+  - pattern:
+      durations:
+        [
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+          "16",
+        ]
+      accents: [2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1]
+    weight: 2000
+
+  - pattern:
+      durations:
+        ["8", "16", "16", "8", "16", "16", "8", "16", "16", "8", "16", "16"]
+      accents: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations:
+        ["16", "16", "8", "16", "16", "8", "16", "16", "8", "16", "16", "8"]
+      accents: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["2", "16", "16", "8", "16", "16", "8"]
+      accents: [2, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["2", "8", "16", "16", "8", "16", "16"]
+      accents: [2, 2, 1, 1, 2, 1, 1]
+    weight: 2000
+
+  - pattern:
+      durations: ["8", "16", "16", "8", "16", "16", "2"]
+      accents: [2, 1, 1, 2, 1, 1, 2]
+    weight: 2000
+
+  - pattern:
+      durations: ["16", "16", "8", "16", "16", "8", "2"]
+      accents: [2, 1, 1, 2, 1, 1, 2]
+    weight: 2000
+
+  - { pattern: even_4, weight: 1 }
+  - { pattern: half_2, weight: 1 }
+  - { pattern: 4_2_4, weight: 2 }
+  - { pattern: two_half, weight: 2 }
+  - { pattern: whole, weight: 1 }
+  - { pattern: 4_4_2, weight: 2 }
+  - { pattern: 8_8_4x3, weight: 4 }
+  - { pattern: 4_8_8_4_4, weight: 4 }
+  - { pattern: 8x4_4x2, weight: 5 }
+  - { pattern: 4x2_8x4, weight: 5 }
+  - { pattern: 4_8x4_4, weight: 4 }
+  - { pattern: 8x4_2, weight: 4 }
+  - { pattern: 2_8x4, weight: 5 }
+  - { pattern: 8_8_4_8_8_4, weight: 4 }
+  - { pattern: 16x4_8_8_4x2, weight: 7 }
+  - { pattern: 4_16x4_8_8_4, weight: 6 }
+  - { pattern: 8_16_16_8_16_16_4x2, weight: 7 }
+  - { pattern: 16x8_4x2, weight: 6 }
+  - { pattern: 6x6, weight: 3 }
+  - { pattern: 12x12, weight: 2 }
+  - { pattern: 6x3_4x2, weight: 3 }
+  - { pattern: 4_6x3_4, weight: 2 }
+  - { pattern: synco_8_4_8_4_4, weight: 7 }
+  - { pattern: synco_4_8_4_8_4, weight: 6 }
+  - { pattern: synco_8_8_4_8_8_4, weight: 7 }
+
+# 动机权重
+motif_weights:
+  - { type: classicB9, weight: 1000 }
+  - { type: classicB9r, weight: 1000 }
+  - { type: classic1, weight: 100 }
+  - { type: classic2, weight: 100 }
+  - { type: classic3, weight: 100 }
+  - { type: classic4, weight: 100 }
+  - { type: classic5, weight: 100 }
+  - { type: classic6, weight: 100 }
+  - { type: ascending, weight: 25 }
+  - { type: descending, weight: 25 }
+  - { type: arch, weight: 20 }
+  - { type: valley, weight: 20 }
+  - { type: repeat, weight: 5 }
+  - { type: random, weight: 5 }
