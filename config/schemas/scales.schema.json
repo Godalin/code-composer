@@ -32,7 +32,17 @@
           "type": "array",
           "description": "音阶度数列表",
           "items": {
-            "$ref": "#/definitions/ScaleDegree"
+            "oneOf": [
+              {
+                "$ref": "#/definitions/ScaleDegree"
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 7,
+                "description": "度数 (1-7)"
+              }
+            ]
           },
           "minItems": 1
         }

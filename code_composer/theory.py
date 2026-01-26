@@ -10,19 +10,21 @@
 """
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Callable, Dict, List, NewType, Optional, Tuple
+from typing import Any, NewType
+
+from pydantic import BaseModel, model_validator
 
 
 # 音名集合（小写 + 升号，Alda 兼容）
-NOTES_SHARP: List[str] = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
-FLAT_TO_SHARP: Dict[str, str] = {'bb': 'a#', 'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'cb': 'b', 'fb': 'e'}
-ENHARMONIC: Dict[str, str] = {'b#': 'c', 'e#': 'f'}
+NOTES_SHARP: list[str] = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b']
+FLAT_TO_SHARP: dict[str, str] = {'bb': 'a#', 'db': 'c#', 'eb': 'd#', 'gb': 'f#', 'ab': 'g#', 'cb': 'b', 'fb': 'e'}
+ENHARMONIC: dict[str, str] = {'b#': 'c', 'e#': 'f'}
 
 
-@dataclass(frozen=True)
-class ScaleDegree:
+class ScaleDegree(BaseModel):
     """音阶度数：数字(1+) + 变音记号。支持 1-7 表示音阶内度数，8+ 表示跨八度（如 9=2+12, 11=4+12, 13=6+12）。
     
     示例：
@@ -31,9 +33,23 @@ class ScaleDegree:
         ScaleDegree(4, 1)   -> ♯4
         ScaleDegree(9, 0)   -> 9（= 2 高一八度，用于和弦扩展）
     """
-    number: int        # 1-7 为音阶内，8+ 表示跨八度（9=2+12, 11=4+12, 13=6+12）
-    accidental: int    # -1=♭, 0=自然, 1=♯
     
+    number: int # 1-7 为音阶内，8+ 表示跨八度（9=2+12, 11=4+12, 13=6+12）
+    accidental: int = 0 # -1=♭, 0=自然, 1=♯
+
+    @model_validator(mode="before")
+    @classmethod
+    def scale_degree_validator(cls, data: Any) -> Any:
+        match data:
+            case ScaleDegree():
+                return data
+            case int(n) | [n] | (n,) | { 'number': n }:
+                return { 'number': n }
+            case [n, a] | (n, a) | { 'number': n, 'accidental': a }:
+                return { 'number': n, 'accidental' : a }
+            case _:
+                raise ValueError(f"Invalid ScaleDegree Format: {data}")
+
     def to_semitones(self) -> int:
         """转换为相对主音的半音数（基于大调音阶）。"""
         # 大调音阶基础半音数: 1=0, 2=2, 3=4, 4=5, 5=7, 6=9, 7=11
@@ -58,6 +74,9 @@ class ScaleDegree:
             acc_str = '♯'
         return f"{acc_str}{self.number}"
     
+    def __repr__(self) -> str:
+        return self.__str__()
+    
     @staticmethod
     def parse(s: str) -> 'ScaleDegree':
         """从字符串解析度数，如 '1', 'b3', '#4', '♭3', '♯4', '9', '♭13'。"""
@@ -72,13 +91,12 @@ class ScaleDegree:
         number = int(s)
         if number < 1:
             raise ValueError(f"度数必须 >= 1: {number}")
-        return ScaleDegree(number, accidental)
+        return ScaleDegree(number=number, accidental=accidental)
 
 
-# 便捷构造函数
 def deg(number: int, accidental: int = 0) -> ScaleDegree:
     """快捷创建度数。deg(1), deg(3, -1), deg(4, 1)。"""
-    return ScaleDegree(number, accidental)
+    return ScaleDegree(number=number, accidental=accidental)
 
 
 @dataclass(frozen=True)
@@ -131,19 +149,19 @@ class Pitch:
 
 
 # 类型别名：区分音阶序列与和弦，避免误用
-ScaleNotes = NewType('ScaleNotes', List[str])  # 仅音名的音阶
-ScalePitches = NewType('ScalePitches', List[Pitch])  # 带八度的音阶序列
-Chord = NewType('Chord', List[Pitch])  # 同时发声的一组音
-Progression = NewType('Progression', List[Tuple[str, Chord]])  # 进行：标记 + 和弦
+ScaleNotes = NewType('ScaleNotes', list[str])  # 仅音名的音阶
+ScalePitches = NewType('ScalePitches', list[Pitch])  # 带八度的音阶序列
+Chord = NewType('Chord', list[Pitch])  # 同时发声的一组音
+Progression = NewType('Progression', list[tuple[str, Chord]])  # 进行：标记 + 和弦
 
 
 # ===== 音阶 =====
 
 # 音阶定义加载（延迟加载，避免循环导入）
-_SCALE_DEGREES_CACHE: Optional[Dict[str, List[ScaleDegree]]] = None
+_SCALE_DEGREES_CACHE: dict[str, list[ScaleDegree]] | None = None
 
 
-def _get_scale_degrees() -> Dict[str, List[ScaleDegree]]:
+def _get_scale_degrees() -> dict[str, list[ScaleDegree]]:
     """获取音阶度数定义（带缓存）"""
     global _SCALE_DEGREES_CACHE
     if _SCALE_DEGREES_CACHE is None:
@@ -152,7 +170,7 @@ def _get_scale_degrees() -> Dict[str, List[ScaleDegree]]:
     return _SCALE_DEGREES_CACHE
 
 
-def degrees_to_intervals(degrees: List[ScaleDegree]) -> List[int]:
+def degrees_to_intervals(degrees: list[ScaleDegree]) -> list[int]:
     """将度数列表转换为半音间隔列表（用于构建音阶序列）。
     
     示例：
@@ -161,7 +179,7 @@ def degrees_to_intervals(degrees: List[ScaleDegree]) -> List[int]:
     if not degrees:
         return []
     
-    intervals: List[int] = []
+    intervals: list[int] = []
     prev_semitones = degrees[0].to_semitones()
     
     for degree in degrees[1:]:
@@ -173,9 +191,9 @@ def degrees_to_intervals(degrees: List[ScaleDegree]) -> List[int]:
     return intervals
 
 
-def build_scale(tonic: Pitch, intervals: List[int]) -> ScalePitches:
+def build_scale(tonic: Pitch, intervals: list[int]) -> ScalePitches:
     """按间隔生成音阶内的 Pitch 序列（带八度）。"""
-    pitches: List[Pitch] = [tonic]
+    pitches: list[Pitch] = [tonic]
     current_pitch = tonic
     
     for step in intervals:
@@ -227,7 +245,7 @@ def gen_scale_sequence(tonic: str, scale: str) -> ScalePitches:
     upper_scale = [p.transpose(12) for p in base_scale]
     
     # 拼接：o4 上行一遍 + o5 上行一遍 + 顶点 + o5 下行 + o4 下行 + 回到主音
-    sequence: List[Pitch] = []
+    sequence: list[Pitch] = []
     sequence.extend(base_scale)
     sequence.extend(upper_scale)
     sequence.extend([tonic_pitch.transpose(24)] * 2)
@@ -246,8 +264,8 @@ def gen_scale_alda(tonic: str, scale: str, tempo: int = 120) -> str:
     scale_seq = gen_scale_sequence(tonic, scale)
     
     # 转换为 Alda 片段（仅在八度变化时标记 oN）
-    notes: List[str] = []
-    current_oct: Optional[int] = None
+    notes: list[str] = []
+    current_oct: int | None = None
     for pitch in scale_seq:
         if pitch.octave != current_oct:
             notes.append(f"o{pitch.octave}")
@@ -259,9 +277,9 @@ def gen_scale_alda(tonic: str, scale: str, tempo: int = 120) -> str:
 
 # ===== 和弦与和声进行 =====
 
-def build_chord(root: Pitch, chord_degrees: List[ScaleDegree]) -> Chord:
+def build_chord(root: Pitch, chord_degrees: list[ScaleDegree]) -> Chord:
     """根据根音与度数列表构建和弦（支持 9/11/13 扩展）。"""
-    pitches: List[Pitch] = []
+    pitches: list[Pitch] = []
     for sd in chord_degrees:
         pitches.append(root.transpose(sd.to_semitones()))
     return Chord(pitches)
@@ -363,7 +381,7 @@ build_add11 = partial(build_chord, chord_degrees=[
 ])
 
 # 级数符号到构建函数的映射（可复用）
-CHORD_BUILDERS: Dict[str, Callable[[Pitch], Chord]] = {
+CHORD_BUILDERS: dict[str, Callable[[Pitch], Chord]] = {
     'maj': build_maj,
     'min': build_min,
     'dim': build_dim,
@@ -398,7 +416,7 @@ def find_pitch_for_degree(
     target_degree: ScaleDegree,
     tonic: Pitch,
     scale_pitches: ScalePitches,
-    scale_degrees: List[ScaleDegree]
+    scale_degrees: list[ScaleDegree]
 ) -> Pitch:
     """在音阶中找到对应度数的音高。
     
@@ -424,7 +442,7 @@ def find_pitch_for_degree(
     return tonic.transpose(semitones)
 
 
-def parse_progression_token(tok: str) -> Tuple[ScaleDegree, Callable[[Pitch], Chord]]:
+def parse_progression_token(tok: str) -> tuple[ScaleDegree, Callable[[Pitch], Chord]]:
     """解析和弦进行符号。支持数字格式：
     - 简单数字：1, 6, 4（默认大三和弦 maj）
     - 带升降号的数字：b6, #4（升降号后跟数字）
@@ -480,7 +498,7 @@ def gen_progression(tonic: Pitch, scale: str, progression_name: str) -> Progress
     scale_degrees_list = scale_degrees[scale]
     
     tokens = progression_name.split('-')
-    chords: List[Tuple[str, Chord]] = []
+    chords: list[tuple[str, Chord]] = []
     
     for tok in tokens:
         if not tok.strip():
@@ -494,15 +512,20 @@ def gen_progression(tonic: Pitch, scale: str, progression_name: str) -> Progress
     return Progression(chords)
 
 
-def gen_progression_alda(tonic: str, scale: str, progression_name: str, tempo: int = 120) -> str:
+def gen_progression_alda(
+    tonic: str,
+    scale: str,
+    progression_name: str,
+    tempo: int = 120
+) -> str:
     """生成指定和声进行的 Alda 代码（用 / 连接和弦内各音），自动处理八度切换。"""
     tonic_pitch = Pitch(tonic, 4)
     chords = gen_progression(tonic_pitch, scale, progression_name)
-    parts: List[str] = [f"(tempo {tempo}) o4"]
+    parts: list[str] = [f"(tempo {tempo}) o4"]
     current_octave: int = 4
     
     for _, pitches in chords:
-        chord_notes: List[str] = []
+        chord_notes: list[str] = []
         for p in pitches:
             # 处理八度变化：将 > 或 < 作为音符前缀
             octave_prefix = ''
@@ -535,10 +558,10 @@ def vary_chord(chord: Chord, level: int) -> Chord:
 # ===== 和声进行风格库 =====
 
 # 和弦进行加载（延迟加载）
-_PROGRESSIONS_CACHE: Optional[Dict[str, Dict[str, str]]] = None
+_PROGRESSIONS_CACHE: dict[str, dict[str, str]] | None = None
 
 
-def _get_all_progressions() -> Dict[str, Dict[str, str]]:
+def _get_all_progressions() -> dict[str, dict[str, str]]:
     """获取所有和弦进行（按音阶分类，带缓存）"""
     global _PROGRESSIONS_CACHE
     if _PROGRESSIONS_CACHE is None:
@@ -556,7 +579,7 @@ def _get_all_progressions() -> Dict[str, Dict[str, str]]:
     return _PROGRESSIONS_CACHE
 
 
-def get_available_progressions(scale: str, style: str = 'default') -> Dict[str, str]:
+def get_available_progressions(scale: str, style: str = 'default') -> dict[str, str]:
     """获取指定音阶与风格下的可用和声进行。"""
     all_progressions = _get_all_progressions()
     base_progressions = all_progressions.get(scale, all_progressions['major']).copy()

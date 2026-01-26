@@ -5,16 +5,17 @@
 替代原有的硬编码预设。
 """
 
-from fractions import Fraction
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
+
 import yaml
+from pydantic import BaseModel, field_validator
 
 from .theory import ScaleDegree
-from .rhythms import RhythmPattern, RhythmEntry, resolve_rhythm_entries
-from .motif import MotifWeight
+from .rhythms import RhythmPattern
+from .motif import MotifEntry
 from .bass import BassPattern
-from .styles import Style, StyleDict
+from .styles import Style
 
 
 # 配置文件根目录（模块级常量）
@@ -42,54 +43,72 @@ def _load_yaml(relative_path: str) -> dict[str, Any]:
 
 # ===== 音阶加载 =====
 
+class ScaleEntry(BaseModel):
+    """音阶配置文件条目格式"""
+    name: str | None = None
+    description: str | None = None
+    degrees: list[ScaleDegree]
+
+
+class ScaleLib(BaseModel):
+    """整个音阶库的格式"""
+    scales: dict[str, ScaleEntry]
+
+
 def load_scales() -> dict[str, list[ScaleDegree]]:
     """加载音阶库"""
     data = _load_yaml("scales.yml")
-    scales_dict = {}
-    
-    for scale_name, scale_info in data['scales'].items():
-        degrees = []
-        for degree_data in scale_info['degrees']:
-            number, accidental = degree_data
-            degrees.append(ScaleDegree(number, accidental))
-        scales_dict[scale_name] = degrees
-    
-    return scales_dict
+    scale_lib = ScaleLib.model_validate(data).scales
+    return { n: s.degrees for n, s in scale_lib.items() }
 
 
 # ===== 节奏加载 =====
 
-def load_rhythm_patterns(time_signature: str) -> dict[str, RhythmPattern]:
+class RhythmLib(BaseModel):
+    """整个音阶库的格式"""
+
+    patterns: dict[str, RhythmPattern]
+
+    @field_validator("patterns", mode="before")
+    @classmethod
+    def patterns_validator(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return { str(k): v for k, v in data.items() }
+        else:
+            raise ValueError(f"Invalid Rhythm Library: {data} should be a mapping from rhythm name to the pattern")
+
+
+def load_rhythm_patterns(time_sig: str) -> dict[str, RhythmPattern]:
     """加载节奏型库"""
-    if time_signature == '4/4':
+    if time_sig == '4/4':
         filename = "rhythms/patterns_4beat.yml"
-    elif time_signature == '3/4':
+    elif time_sig == '3/4':
         filename = "rhythms/patterns_3beat.yml"
     else:
-        raise ValueError(f"不支持的拍号: {time_signature}")
+        raise ValueError(f"不支持的拍号: {time_sig}")
     
     data = _load_yaml(filename)
-    patterns = {}
-    
-    for pattern_name, pattern_info in data['patterns'].items():
-        durations = pattern_info['durations']
-        accents = pattern_info['accents']
-        patterns[pattern_name] = (durations, accents)
-    
-    return patterns
+    rhythm_lib = RhythmLib.model_validate(data).patterns
+    return rhythm_lib
 
 
 # ===== 和弦进行加载 =====
 
-def load_progressions(progression_file: str) -> dict[str, str]:
+class ProgressionEntry(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class ProgressionLib(BaseModel):
+    progressions: dict[str, ProgressionEntry]
+
+
+def load_progressions(progression: str) -> dict[str, str]:
     """加载和弦进行库"""
+    progression_file = f"progressions/{progression}.yml"
     data = _load_yaml(progression_file)
-    progressions = {}
-    
-    for prog_key, prog_info in data['progressions'].items():
-        progressions[prog_key] = prog_info['name']
-    
-    return progressions
+    progression_lib = ProgressionLib.model_validate(data)
+    return { k : v.name for k, v in progression_lib.progressions.items() }
 
 
 def load_multiple_progressions(progression_sources: list[str]) -> dict[str, str]:
@@ -101,15 +120,34 @@ def load_multiple_progressions(progression_sources: list[str]) -> dict[str, str]
     return all_progressions
 
 
+def list_available_progression_libs() -> list[str]:
+    """列出所有可用的风格名称"""
+    progressions_dir = _CONFIG_DIR / "progressions"
+    if not progressions_dir.exists():
+        return []
+    return [
+        f.stem for f in progressions_dir.glob("*.yml")
+        if f.is_file()
+    ]
+
+
 # ===== 动机模板库加载 =====
 
-def load_motifs() -> dict[str, dict[str, Any]]:
+class MotifLib(BaseModel):
+    """整个音阶库的格式"""
+    motifs: dict[str, MotifEntry]
+
+
+def load_motifs() -> dict[str, MotifEntry]:
     """加载动机模板库"""
     data = _load_yaml("motifs.yml")
-    return data["motifs"]
+    return MotifLib.model_validate(data).motifs
 
 
 # ===== 低音模板库加载 =====
+
+class BassLib(BaseModel):
+    bass: dict[str, BassPattern]
 
 def load_bass_patterns(time_signature: str) -> dict[str, BassPattern]:
     """加载节奏型库"""
@@ -121,7 +159,7 @@ def load_bass_patterns(time_signature: str) -> dict[str, BassPattern]:
         raise ValueError(f"不支持的拍号: {time_signature}")
     
     data = _load_yaml(filename)
-    return data["bass"]
+    return BassLib.model_validate(data).bass
 
 
 def list_available_bass_patterns() -> list[str]:
@@ -144,64 +182,7 @@ def list_available_styles() -> list[str]:
     ]
 
 
-def load_style(style_name: str) -> StyleDict:
+def load_style(style_name: str) -> Style:
     """加载风格配置"""
-    return cast(StyleDict, _load_yaml(f"styles/{style_name}.yml"))
-
-
-def get_style_rhythm_weights(style_name: str) -> list[RhythmEntry]:
-    """获取风格的节奏权重列表"""
-    style_config = load_style(style_name)
-    return style_config["rhythm_weights"]
-
-
-def get_style_motif_weights(style_name: str) -> list[MotifWeight]:
-    """获取风格的动机权重列表 (motif_name)"""
-    style_config = load_style(style_name)
-    return style_config["motif_weights"]
-
-
-def get_style_progressions(style_name: str) -> dict[str, str]:
-    """获取风格可用的和弦进行"""
-    style_config = load_style(style_name)
-    sources = style_config.get('progression_sources', [])
-    return load_multiple_progressions(sources)
-
-
-def resolve_style(style_name: str) -> Style:
-    """从配置文件构建 Style 对象"""
-
-    # 加载风格配置
-    config: StyleDict = load_style(style_name)
-
-    # 解析时间签名
-    time_signature = config.get('time_signature', '4/4')
-    numer, denom = time_signature.split('/')
-    bar_target_beats = Fraction(int(numer), int(denom))
-
-    # 加载节奏模式权重
-    rhythm_entries = get_style_rhythm_weights(style_name)
-    rhythm_weight = resolve_rhythm_entries(rhythm_entries, time_signature)
-
-    # 加载动机权重
-    motif_weights = get_style_motif_weights(style_name)
-
-    # 加载和弦进行
-    progressions_dict = get_style_progressions(style_name)
-    progressions = list(progressions_dict.values())
-
-    return Style(
-        name=style_name,
-        time_signature=time_signature,
-        rhythm_weights=rhythm_weight,
-        available_progressions=progressions,
-        bar_target_beats=bar_target_beats,
-        bass_pattern=config.get('bass_pattern', 'block'),
-        motif_weights=motif_weights,
-        key=config.get('key', 'C'),
-        scale=config.get('scale', 'major'),
-        tempo=config.get('tempo', 120),
-        octave=config.get('octave', 4),
-        progression=config.get('progression', '1-6min-4-5'),
-        instrument=config.get('instrument', 'violin')
-    )
+    data = _load_yaml(f"styles/{style_name}.yml")
+    return Style.model_validate(data)

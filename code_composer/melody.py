@@ -4,7 +4,7 @@ from fractions import Fraction
 
 from .theory import Chord, ScalePitches, Pitch
 from .motif import create_motif_generator, choose_motif_type, MotifWeight
-from .rhythms import choose_rhythm, RhythmWeight, RhythmPattern
+from .rhythms import choose_rhythm, RhythmWeight
 from .structures import Note
 from .durations import duration_to_beats, fill_rests
 
@@ -20,11 +20,13 @@ def gen_bar_melody(
 ) -> list[list[Note]]:
     """为单个小节生成旋律音符组序列"""
 
-    durations, accents = choose_rhythm(rhythm_weights)
-    
+    rhythm = choose_rhythm(rhythm_weights)
+    durations = rhythm.durations
+    accents = rhythm.accents
+
     # 选择动机类型
     motif_type = choose_motif_type(motif_weights)
-    
+
     # 创建动机生成器
     motif_gen = create_motif_generator(chord, scale_pitches, motif_type, octave)
     
@@ -73,18 +75,18 @@ def gen_bar_melody_fancy(
     volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
     
     if random.random() < 0.5:
-      pitches : list[Pitch] = (
-          [replace(p, octave=p.octave-1) for p in chord]
-          + [replace(p, octave=p.octave) for p in chord]
-          + [replace(p, octave=p.octave+1) for p in chord]
-          + [replace(p, octave=p.octave+2) for p in chord])
+        pitches : list[Pitch] = (
+            [replace(p, octave=p.octave-1) for p in chord]
+            + [replace(p, octave=p.octave) for p in chord]
+            + [replace(p, octave=p.octave+1) for p in chord]
+            + [replace(p, octave=p.octave+2) for p in chord])
     else:
-      pitches : list[Pitch] = (
-          [replace(p, octave=p.octave) for p in chord]
-          + [replace(p, octave=p.octave+1) for p in chord]
-          + [replace(chord[0], octave=chord[0].octave+2)]
-          + list(reversed([replace(p, octave=p.octave) for p in chord]
-          + [replace(p, octave=p.octave+1) for p in chord])))
+        pitches : list[Pitch] = (
+            [replace(p, octave=p.octave) for p in chord]
+            + [replace(p, octave=p.octave+1) for p in chord]
+            + [replace(chord[0], octave=chord[0].octave+2)]
+            + list(reversed([replace(p, octave=p.octave) for p in chord]
+            + [replace(p, octave=p.octave+1) for p in chord])))
 
     notes = []
     for dur, vol, pitch in zip(durations, accents, pitches):

@@ -4,7 +4,9 @@
 """
 
 import random
-from typing import Generator, TypedDict
+from collections.abc import Generator
+
+from pydantic import BaseModel
 
 from .theory import Pitch, Chord, ScalePitches
 
@@ -14,13 +16,13 @@ type MotifPattern = list[list[int]]
 
 
 # 权重条目形式
-class MotifWeight(TypedDict):
+class MotifWeight(BaseModel):
     weight: int
     type: str
 
 
 # 配置文件条目形式
-class MotifEntry(TypedDict):
+class MotifEntry(BaseModel):
     name: str
     pattern: MotifPattern
 
@@ -31,15 +33,15 @@ def choose_motif_type(motif_weights: list[MotifWeight]) -> str:
     if not motif_weights:
         motifs = list(load_motifs().keys())
         return random.choice(motifs)
-    motifs = [m['type'] for m in motif_weights]
-    weight_vals = [m['weight'] for m in motif_weights]
+    motifs = [m.type for m in motif_weights]
+    weight_vals = [m.weight for m in motif_weights]
     return random.choices(motifs, weights=weight_vals, k=1)[0]
 
 
 def get_motif_weights(style_name: str) -> list[MotifWeight]:
     """按风格名称返回动机权重预设 (motif_name)"""
-    from .config_loader import get_style_motif_weights
-    return get_style_motif_weights(style_name)
+    from .config_loader import load_style
+    return load_style(style_name).motif_weights
 
 
 # ===== 辅助函数 =====
@@ -153,6 +155,7 @@ def create_motif_generator (
     motif_lib = load_motifs()
     if motif_type not in motif_lib.keys():
         raise  ValueError(f"不存在的动机：{motif_type}")
-    motif_pattern = motif_lib[motif_type]["pattern"]
+
+    motif_pattern = motif_lib[motif_type].pattern
     return gen_motif_generator(
         chord, scale_pitches, motif_pattern, n_steps, octave_hint)

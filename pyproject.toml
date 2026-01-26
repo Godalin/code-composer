@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pycparser>=2.21",
+    "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
 ]
 authors = [{ name = "godalin" }]
