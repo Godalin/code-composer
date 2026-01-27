@@ -5,13 +5,12 @@
 从配置文件加载所有风格定义。
 """
 
-
 from fractions import Fraction
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, StringConstraints
 
-from .rhythms import RhythmWeight, RhythmEntry, RhythmPattern, get_rhythm_library
+from .rhythms import get_rhythm_library, RhythmWeight, RhythmEntry, RhythmPattern
 from .motif import MotifWeight
 
 
@@ -29,7 +28,7 @@ class Style(BaseModel):
     """
 
     name: str
-    time_signature: str
+    time_signature: Annotated[str, StringConstraints(pattern=r"\d+/\d+")]
     rhythm_entries: list[RhythmEntry]
     motif_weights: list[MotifWeight]
     bass_pattern: str = 'block'
@@ -68,7 +67,7 @@ class Style(BaseModel):
     @property
     def rhythm_weights(self) -> list[RhythmWeight]:
         return [ self.resolve_rhythm_entry(re) for re in self.rhythm_entries ]
-    
+
     # @property
     # def progressions(self) -> dict[str, list[tuple[str, list[str]]]]:
     #     from .config_loader import load_multiple_progressions
