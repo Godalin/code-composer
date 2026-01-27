@@ -13,25 +13,23 @@
 
 
 import random
-from typing import Any
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 # 节奏模式：(时值列表, 强弱列表)
 class RhythmPattern(BaseModel):
     name: str | None = None
     durations: list[int]
-    accents: list[int]
+    accents: list[Literal[0, 1, 2, 3]]
 
-    def __getitem__(self, idx) -> list[int]:
-        match idx:
-            case 0:
-                return self.durations
-            case 1:
-                return self.accents
-            case _:
-                raise ValueError(f"Invalid index for RhythmPattern: {idx}")
+    @model_validator(mode='after')
+    def pattern_validator(self: Self) -> Self:
+        assert all(map(lambda d: d > 0, self.durations))
+        assert all(map(lambda d: d >= 0, self.durations))
+        assert len(self.durations) == len(self.accents)
+        return self
 
 
 # (权重, 节奏名称)

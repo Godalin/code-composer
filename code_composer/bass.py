@@ -81,7 +81,7 @@ def gen_bass_from_template(
                 octave=octave), duration=dur, velocity=volume_map[vol])
                     for i in idxs])
     
-    return _finish_bar(groups, rhythm_pattern[0], bar_target_beats)
+    return _finish_bar(groups, rhythm_pattern.durations, bar_target_beats)
 
 
 # ===== 低音库加载 =====
