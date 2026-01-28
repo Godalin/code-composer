@@ -13,15 +13,17 @@
 
 
 import random
-from typing import Any, Literal, Self
+from collections.abc import Iterator
+from typing import Annotated, Any, Literal, Self
 
+from annotated_types import Ge, Gt
 from pydantic import BaseModel, field_validator, model_validator
 
 
 # 节奏模式：(时值列表, 强弱列表)
 class RhythmPattern(BaseModel):
     name: str | None = None
-    durations: list[int]
+    durations: list[Annotated[int, Gt(0)]]
     accents: list[Literal[0, 1, 2, 3]]
 
     @model_validator(mode='after')
@@ -31,10 +33,14 @@ class RhythmPattern(BaseModel):
         assert len(self.durations) == len(self.accents)
         return self
 
+    @property
+    def zip (self: Self) -> Iterator[tuple[int, Literal[0, 1, 2, 3]]]:
+        return zip(self.durations, self.accents)
+
 
 # (权重, 节奏名称)
 class RhythmWeight(BaseModel):
-    weight: int
+    weight: Annotated[int, Ge(0)]
     pattern: RhythmPattern
 
 
@@ -57,31 +63,13 @@ class RhythmEntry(BaseModel):
 
 def choose_rhythm(rhythm_weights: list[RhythmWeight]) -> RhythmPattern:
     """随机挑选一个节奏型"""
-    if len(rhythm_weights) > 1:
+    length = len(rhythm_weights)
+    if length > 1:
         pattern_idx = random.choices(
-            range(len(rhythm_weights)),
+            range(length),
             weights=list(map(lambda r: r.weight, rhythm_weights)),
             k=1
         )[0]
     else:
         pattern_idx = 0
     return rhythm_weights[pattern_idx].pattern
-
-
-# ===== 节奏库加载 =====
-
-def get_rhythm_library(time_signature: str) -> dict[str, RhythmPattern]:
-    """获取节奏型库"""
-    from .config_loader import load_rhythm_patterns
-    return load_rhythm_patterns(time_signature)
-
-
-def get_rhythm(time_signature: str, rhythm_name: str) -> RhythmPattern:
-    """从名称获取指定拍号的节奏型"""
-    from .config_loader import load_rhythm_patterns
-    return load_rhythm_patterns(time_signature)[rhythm_name]
-
-
-def list_rhythm_styles() -> list[str]:
-    from .config_loader import list_available_styles
-    return list_available_styles()

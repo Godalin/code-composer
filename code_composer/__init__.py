@@ -18,7 +18,6 @@ from .composer import (
 )
 from .bass import (
     gen_bar_bass,
-    list_bass_patterns,
 )
 from .exporter import (
     export_to_midi,
@@ -47,7 +46,6 @@ __all__ = [
     "compose",
     # Bass module
     "gen_bar_bass",
-    "list_bass_patterns",
     # Data structures
     "Bar",
     "ChordSpan",

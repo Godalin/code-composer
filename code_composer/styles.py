@@ -10,8 +10,8 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, model_validator, StringConstraints
 
-from .rhythms import get_rhythm_library, RhythmWeight, RhythmEntry, RhythmPattern
 from .motif import MotifWeight
+from .rhythms import RhythmEntry, RhythmWeight, RhythmPattern
 
 
 class Style(BaseModel):
@@ -37,7 +37,7 @@ class Style(BaseModel):
     tempo: int = 120
     octave: int = 4
     progression: str = '1-6min-4-5'
-    progressions: list[str] = []
+    progression_sources: list[str] = []
     instrument: str = 'violin'
 
     @model_validator(mode='before')
@@ -45,7 +45,7 @@ class Style(BaseModel):
     def style_validator(cls, data: dict[str, Any]) -> dict[str, Any]:
         data = dict(data)
         data['rhythm_entries'] = data.pop('rhythm_weights')
-        data['progressions'] = data.pop('progression_sources')
+        # data['progressions'] = data.pop('progression_sources')
         return data
 
     @property
@@ -55,7 +55,9 @@ class Style(BaseModel):
 
     def resolve_rhythm_entry(self, entry: RhythmEntry) -> RhythmWeight:
         """根据节奏条目解析出具体节奏型"""
-        rhythm_lib = get_rhythm_library(self.time_signature)
+        from .config_loader import load_rhythm_patterns
+
+        rhythm_lib = load_rhythm_patterns(self.time_signature)
         match entry:
             case RhythmEntry(weight=w, pattern=str(name)):
                 return RhythmWeight(weight=w, pattern=rhythm_lib[name])
@@ -68,10 +70,10 @@ class Style(BaseModel):
     def rhythm_weights(self) -> list[RhythmWeight]:
         return [ self.resolve_rhythm_entry(re) for re in self.rhythm_entries ]
 
-    # @property
-    # def progressions(self) -> dict[str, list[tuple[str, list[str]]]]:
-    #     from .config_loader import load_multiple_progressions
-    #     return load_multiple_progressions(self.progression_sources)
+    @property
+    def progressions(self) -> dict[str, str]:
+        from .config_loader import load_multiple_progressions
+        return load_multiple_progressions(self.progression_sources)
 
 
 _STYLES: dict[str, Style] = {}

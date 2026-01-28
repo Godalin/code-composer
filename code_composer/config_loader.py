@@ -92,6 +92,11 @@ def load_rhythm_patterns(time_sig: str) -> dict[str, RhythmPattern]:
     return rhythm_lib
 
 
+def get_rhythm(time_signature: str, rhythm_name: str) -> RhythmPattern:
+    """从名称获取指定拍号的节奏型"""
+    return load_rhythm_patterns(time_signature)[rhythm_name]
+
+
 # ===== 和弦进行加载 =====
 
 class ProgressionEntry(BaseModel):
