@@ -301,7 +301,4 @@ def compose(
         + "\n".join(insts_parts[inst])
     for inst in insts))
 
-    # 打印调试信息
-    print(comp.debug_summary())
-
     return alda_score, comp

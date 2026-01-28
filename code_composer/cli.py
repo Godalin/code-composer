@@ -4,22 +4,24 @@ Code Composer 命令行工具
 """
 
 import argparse
+import logging
 import os
 import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Literal, Tuple
+from typing import Literal
 
 from .composer import compose
-from .frontend import compile_c_code
-from .styles import create_style_with, get_style, list_styles
-from .config_loader import load_scales, list_available_bass_patterns
+from .config_loader import list_available_bass_patterns, load_scales
 from .exporter import export_to_midi, midi_to_mp3, play_alda_code
-from .theory import (
-    gen_scale_alda,
-    gen_progression_alda,
-)
+from .frontend import compile_c_code
+from .styles import create_style_with, list_styles
+from .theory import gen_progression_alda, gen_scale_alda
+
+
+logger = logging.getLogger(__file__)
+logging.basicConfig(level=logging.INFO)
 
 
 def create_parser():
@@ -164,12 +166,6 @@ def create_parser():
     )
 
     parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='生成后打印作品的树形结构信息'
-    )
-    
-    parser.add_argument(
         '--no-play',
         action='store_true',
         help='生成后不自动播放音乐'
@@ -216,34 +212,19 @@ def detect_language(source: str) -> Literal['c', 'python']:
         return 'c'
 
 
-def play_audio(alda_file: str, verbose: bool = False) -> bool:
+def play_audio(alda_file: str) -> None:
     """使用 alda 命令播放音乐"""
     import subprocess
     
     path = Path(alda_file)
     if not path.exists():
-        return False
+        raise ValueError(f"File does not exists: {path}")
     
-    try:
-        if verbose:
-            print(f"🎵 播放: {path}")
-        subprocess.run(['alda', 'play', '-f', str(path)], check=True, capture_output=True)
-        return True
-    except FileNotFoundError:
-        print("❌ 错误: 未找到 alda 命令。请确保 alda 已安装。")
-        print("   安装指南: https://alda.io/setup/")
-        return False
-    except subprocess.CalledProcessError as e:
-        if verbose:
-            print(f"⚠️  播放失败: {e}")
-        return False
-    except Exception as e:
-        if verbose:
-            print(f"⚠️  播放错误: {e}")
-        return False
+    logger.debug(f"🎵 播放: {path}")
+    subprocess.run(['alda', 'play', '-f', str(path)], check=True, capture_output=True)
 
 
-def read_source_file(filepath: str) -> Tuple[str, str]:
+def read_source_file(filepath: str) -> tuple[str, str]:
     """读取源代码文件，返回 (代码, 语言)"""
     path = Path(filepath)
     
@@ -292,20 +273,29 @@ def main() -> None:
     parser = create_parser()
     args = parser.parse_args()
 
+    if args.verbose:
+        logger.setLevel(level=logging.DEBUG)
+
     # 验证：非测试模式下必须提供输入源代码
     if not args.test_scale and not args.test_chord and not args.file and not args.code:
         parser.error("需要提供 -f/--file 或 -c/--code 参数，除非使用 --test-scale/--test-chord 模式")
 
     # 从风格获取默认值，用户指定的参数覆盖
-    style_obj = get_style(args.style)
-    if style_obj is None:
-        print(f"❌ 错误: 未知的风格: {args.style}", file=sys.stderr)
-        sys.exit(1)
+    style_obj = create_style_with(
+        args.style,
+        key=args.key,
+        scale=args.scale,
+        tempo=args.tempo,
+        progression=args.chord,
+        bass_pattern=args.bass_pattern,
+        instrument=args.instrument,
+    )
 
-    if args.verbose:
-        print(f"🎵 使用风格: {args.style}")
-        print(f"   调性: {args.key}, 音阶: {args.scale}, 速度: {args.tempo} BPM")
-        print(f"   和声进行: {args.chord} ({style_obj.progressions[args.chord]})")
+    logger.debug(style_obj)
+
+    logger.debug(f"  风格: {args.style}")
+    logger.debug(f"  调性: {args.key}, 音阶: {args.scale}, 速度: {args.tempo} BPM")
+    logger.debug(f"  和声进行: {args.chord} ({style_obj.progressions[args.chord]})")
 
     # 初始化临时文件变量
     use_temp_file = False
@@ -316,7 +306,8 @@ def main() -> None:
     if args.output is None:
         # 用户显式要求不播放但也不输出文件，直接报错
         if args.no_play:
-            parser.error("❌ 错误: 使用 --no-play 时必须通过 -o 指定输出文件。")
+            logger.error("❌ 错误: 使用 --no-play 时必须通过 -o 指定输出文件。")
+            sys.exit(-1)
 
         # 未禁用播放则使用临时目录输出并自动播放
         use_temp_file = True
@@ -327,25 +318,23 @@ def main() -> None:
         # 处理测试模式：音阶 / 和弦进行
         if args.test_scale or args.test_chord:
             if args.test_scale:
-                if args.verbose:
-                    print(f"🎵 音阶测试模式")
-                    print(f"   调性: {args.key}, 音阶: {args.scale}")
+                logger.debug(f"  音阶测试模式")
+                logger.debug(f"  调性: {args.key}, 音阶: {args.scale}")
                 alda_code = gen_scale_alda(args.key, args.scale, args.tempo)
             else:
-                if args.verbose:
-                    print(f"🎵 和弦进行测试模式")
-                    print(f"   调性: {args.key}, 音阶: {args.scale}, 进行: {args.chord}")
+                logger.debug(f"  和弦进行测试模式")
+                logger.debug(f"  调性: {args.key}, 音阶: {args.scale}, 进行: {args.chord}")
                 alda_code = gen_progression_alda(args.key, args.scale, args.chord, args.tempo)
-            
+
             alda_file = None
             if original_output:
                 alda_file = determine_output_path(original_output, 'alda')
                 with open(alda_file, 'w') as f:
                     f.write(alda_code)
                 label = "音阶" if args.test_scale else "和弦进行"
-                print(f"✓ {label}已保存到: {alda_file}")
-            elif args.verbose:
-                print("✓ Alda 代码已生成")
+                logger.debug(f"✓ {label}已保存到: {alda_file}")
+
+            logger.debug("✓ Alda 代码已生成")
             
             # 导出 MIDI 和 MP3（如果指定了输出）
             if original_output and alda_file:
@@ -360,42 +349,26 @@ def main() -> None:
             if not args.no_play:
                 play_alda_code(alda_code)
             return
-        
+
         # 读取源代码
         if args.file:
-            if args.verbose:
-                print(f"📖 读取文件: {args.file}")
+            logger.debug(f"  读取文件: {args.file}")
             source, detected_lang = read_source_file(args.file)
         else:
             source = args.code
             detected_lang = None
-        
+
         # 确定语言
         if args.lang == 'auto':
             lang = detected_lang or detect_language(source)
         else:
             lang = args.lang
         
-        if args.verbose:
-            print(f"🔍 检测到语言: {lang.upper()}")
-            print(f"📝 代码行数: {len(source.splitlines())}")
-        
+        logger.debug(f"  检测到语言: {lang.upper()}")
+        logger.debug(f"  代码行数: {len(source.splitlines())}")
 
-        # ===== 生成音乐 =====
-        if args.verbose:
-            print(f"\n🎼 生成 {args.format.upper()} 格式...")
-        
-        # 编译源码并构造 Style
+        # 编译源码
         tokens = compile_c_code(source)
-        style_obj = create_style_with(
-            args.style,
-            key=args.key,
-            scale=args.scale,
-            tempo=args.tempo,
-            progression=args.chord,
-            bass_pattern=args.bass_pattern,
-            instrument=args.instrument,
-        )
         alda_score, comp = compose(
             style=style_obj,
             tokens=tokens,
@@ -416,30 +389,17 @@ def main() -> None:
         export_to_midi(alda_file, midi_file)
         midi_to_mp3(midi_file, mp3_file, str(sf_file))
         
-        print(f"✓ 生成成功!")
+        logger.info(f"✓ 生成成功!")
         
         # 调试输出：作品树形结构
-        if args.debug:
-            print("\n[DEBUG] 作品树形结构:")
-            print("-" * 80)
-            print(comp.print_tree())
+        # 打印调试信息
+        logger.info(comp.debug_summary())
+        logger.debug(comp.print_tree())
         
         # 自动播放（总是播放 Alda 文件）
         if not args.no_play:
-            play_audio(alda_file, verbose=args.verbose)
-    
-    except FileNotFoundError as e:
-        print(f"❌ 错误: {e}", file=sys.stderr)
-        sys.exit(1)
-    except ValueError as e:
-        print(f"❌ 错误: {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ 未知错误: {e}", file=sys.stderr)
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
-        sys.exit(1)
+            play_audio(alda_file)
+
     finally:
         # 清理临时文件
         if use_temp_file and temp_dir:
