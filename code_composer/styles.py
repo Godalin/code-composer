@@ -76,6 +76,21 @@ class Style(BaseModel):
         return load_multiple_progressions(self.progression_sources)
 
 
+    # def get_available_progressions() -> dict[str, str]:
+    #     """获取指定音阶与风格下的可用和声进行。"""
+    #     all_progressions = _get_all_progressions()
+    #     base_progressions = all_progressions.get(scale, all_progressions['major']).copy()
+    #     if style == 'jazz':
+    #         base_progressions.update(all_progressions['jazz'])
+    #     return base_progressions
+
+
+    # def get_default_progression(scale: str, style: str = 'default') -> str:
+    #     """获取指定音阶与风格的默认和声进行名称。"""
+    #     progressions = get_available_progressions(scale, style)
+    #     return list(progressions.keys())[0]
+
+
 _STYLES: dict[str, Style] = {}
 
 

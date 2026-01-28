@@ -9,17 +9,14 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Tuple
+from typing import Literal, Tuple
 
 from .composer import compose
 from .frontend import compile_c_code
 from .styles import create_style_with, get_style, list_styles
 from .config_loader import load_scales, list_available_bass_patterns
 from .exporter import export_to_midi, midi_to_mp3, play_alda_code
-from .structures import print_composition_tree
 from .theory import (
-    get_available_progressions,
-    get_default_progression,
     gen_scale_alda,
     gen_progression_alda,
 )
@@ -200,7 +197,7 @@ def create_parser():
     return parser
 
 
-def detect_language(source: str) -> str:
+def detect_language(source: str) -> Literal['c', 'python']:
     """自动检测源代码语言"""
     # 检查 C 风格特征
     c_keywords = ['#include', 'int', 'char', 'void', 'return', 'if', 'for', 'while']
@@ -294,23 +291,22 @@ def main() -> None:
     """主命令行入口"""
     parser = create_parser()
     args = parser.parse_args()
-    
+
     # 验证：非测试模式下必须提供输入源代码
     if not args.test_scale and not args.test_chord and not args.file and not args.code:
         parser.error("需要提供 -f/--file 或 -c/--code 参数，除非使用 --test-scale/--test-chord 模式")
-    
+
     # 从风格获取默认值，用户指定的参数覆盖
     style_obj = get_style(args.style)
     if style_obj is None:
         print(f"❌ 错误: 未知的风格: {args.style}", file=sys.stderr)
         sys.exit(1)
-    
+
     if args.verbose:
         print(f"🎵 使用风格: {args.style}")
         print(f"   调性: {args.key}, 音阶: {args.scale}, 速度: {args.tempo} BPM")
-        available = get_available_progressions(args.scale, args.style)
-        print(f"   和声进行: {args.chord} ({available[args.chord]})")
-    
+        print(f"   和声进行: {args.chord} ({style_obj.progressions[args.chord]})")
+
     # 初始化临时文件变量
     use_temp_file = False
     temp_dir = None
@@ -326,7 +322,7 @@ def main() -> None:
         use_temp_file = True
         temp_dir = tempfile.mkdtemp(prefix='code_composer_')
         args.output = os.path.join(temp_dir, 'temp_music')
-    
+
     try:
         # 处理测试模式：音阶 / 和弦进行
         if args.test_scale or args.test_chord:
@@ -426,7 +422,7 @@ def main() -> None:
         if args.debug:
             print("\n[DEBUG] 作品树形结构:")
             print("-" * 80)
-            print(print_composition_tree(comp))
+            print(comp.print_tree())
         
         # 自动播放（总是播放 Alda 文件）
         if not args.no_play:

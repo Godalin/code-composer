@@ -105,21 +105,24 @@ class Pitch:
     name: str
     octave: int
     index: int = field(init=False)
-    
+
     def __post_init__(self):
         object.__setattr__(self, 'name', Pitch.normalize(self.name))
         object.__setattr__(self, 'index', Pitch.note_index(self.name))
-    
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def __str__(self) -> str:
         """科学记号表示（如 'c4', 'f♯5'）"""
         return f"{self.name.replace('#', '♯')}{self.octave}"
-    
-    def __eq__(self, other) -> bool:
+
+    def __eq__(self, other: Any) -> bool:
         """只允许 Pitch 之间的比较"""
         if not isinstance(other, Pitch):
             return False
         return self.index == other.index and self.octave == other.octave
-    
+
     @staticmethod
     def normalize(note: str) -> str:
         """规范化音名，接受升号与常见降号（转为升号）。"""
@@ -131,12 +134,12 @@ class Pitch:
         if n not in NOTES_SHARP:
             raise ValueError(f"无效音名: {note}")
         return n
-    
+
     @staticmethod
     def note_index(note: str) -> int:
         """获取音名在 NOTES_SHARP 中的索引。"""
         return NOTES_SHARP.index(Pitch.normalize(note))
-    
+
     def transpose(self, semitones: int) -> 'Pitch':
         """转置指定半音数。支持正负值."""
         current_idx = Pitch.note_index(self.name)
@@ -156,19 +159,6 @@ Progression = NewType('Progression', list[tuple[str, Chord]])  # 进行：标记
 
 
 # ===== 音阶 =====
-
-# 音阶定义加载（延迟加载，避免循环导入）
-_SCALE_DEGREES_CACHE: dict[str, list[ScaleDegree]] | None = None
-
-
-def _get_scale_degrees() -> dict[str, list[ScaleDegree]]:
-    """获取音阶度数定义（带缓存）"""
-    global _SCALE_DEGREES_CACHE
-    if _SCALE_DEGREES_CACHE is None:
-        from .config_loader import load_scales
-        _SCALE_DEGREES_CACHE = load_scales()
-    return _SCALE_DEGREES_CACHE
-
 
 def degrees_to_intervals(degrees: list[ScaleDegree]) -> list[int]:
     """将度数列表转换为半音间隔列表（用于构建音阶序列）。
@@ -205,7 +195,9 @@ def build_scale(tonic: Pitch, intervals: list[int]) -> ScalePitches:
 
 def get_scale(tonic: Pitch, scale: str) -> ScalePitches:
     """获取带八度的音阶序列。"""
-    scale_degrees = _get_scale_degrees()
+    from .config_loader import load_scales
+
+    scale_degrees = load_scales()
     if scale not in scale_degrees:
         raise ValueError(f"未知音阶: {scale}")
     intervals = degrees_to_intervals(scale_degrees[scale])
@@ -492,23 +484,26 @@ def gen_progression(tonic: Pitch, scale: str, progression_name: str) -> Progress
     
     进行格式：用 - 分隔的和弦符号，如 "1-6maj-4-5dim-b3"
     """
+    from .config_loader import load_scales
+
     # 获取基础音阶和度数列表
     scale_pitches = get_scale(tonic, scale)
-    scale_degrees = _get_scale_degrees()
+    scale_degrees = load_scales()
+
     scale_degrees_list = scale_degrees[scale]
     
     tokens = progression_name.split('-')
     chords: list[tuple[str, Chord]] = []
-    
+
     for tok in tokens:
         if not tok.strip():
             continue
         scale_degree, builder = parse_progression_token(tok)
-        # 使用新逻辑：根据度数找到对应的音高
+
         root = find_pitch_for_degree(scale_degree, tonic, scale_pitches, scale_degrees_list)
         chord_pitches = builder(root)
         chords.append((tok, chord_pitches))
-    
+
     return Progression(chords)
 
 
@@ -523,7 +518,7 @@ def gen_progression_alda(
     chords = gen_progression(tonic_pitch, scale, progression_name)
     parts: list[str] = [f"(tempo {tempo}) o4"]
     current_octave: int = 4
-    
+
     for _, pitches in chords:
         chord_notes: list[str] = []
         for p in pitches:
@@ -553,42 +548,3 @@ def vary_chord(chord: Chord, level: int) -> Chord:
             return build_aug(root)
         case _:
             return chord
-
-
-# ===== 和声进行风格库 =====
-
-# 和弦进行加载（延迟加载）
-_PROGRESSIONS_CACHE: dict[str, dict[str, str]] | None = None
-
-
-def _get_all_progressions() -> dict[str, dict[str, str]]:
-    """获取所有和弦进行（按音阶分类，带缓存）"""
-    global _PROGRESSIONS_CACHE
-    if _PROGRESSIONS_CACHE is None:
-        from .config_loader import load_progressions
-        _PROGRESSIONS_CACHE = {
-            'major': load_progressions('progressions/major.yml'),
-            'minor': load_progressions('progressions/minor.yml'),
-            'dorian': load_progressions('progressions/dorian.yml'),
-            'pentatonic_major': load_progressions('progressions/pentatonic.yml'),
-            'pentatonic_minor': load_progressions('progressions/pentatonic.yml'),  # 共用五声
-            'gypsy_minor': load_progressions('progressions/gypsy.yml'),
-            'gypsy_major': load_progressions('progressions/gypsy.yml'),
-            'jazz': load_progressions('progressions/jazz.yml'),
-        }
-    return _PROGRESSIONS_CACHE
-
-
-def get_available_progressions(scale: str, style: str = 'default') -> dict[str, str]:
-    """获取指定音阶与风格下的可用和声进行。"""
-    all_progressions = _get_all_progressions()
-    base_progressions = all_progressions.get(scale, all_progressions['major']).copy()
-    if style == 'jazz':
-        base_progressions.update(all_progressions['jazz'])
-    return base_progressions
-
-
-def get_default_progression(scale: str, style: str = 'default') -> str:
-    """获取指定音阶与风格的默认和声进行名称。"""
-    progressions = get_available_progressions(scale, style)
-    return list(progressions.keys())[0]

@@ -13,12 +13,8 @@ Code Composer - 将源代码转换为音乐的编译系统
 - frontend/：源代码解析（C 和 Python 前端）
 """
 
-from .composer import (
-    compose,
-)
-from .bass import (
-    gen_bar_bass,
-)
+from .composer import compose
+from .bass import gen_bar_bass
 from .exporter import (
     export_to_midi,
     midi_to_mp3,
@@ -31,13 +27,10 @@ from .structures import (
     Phrase,
     Composition,
     Note,
-    print_composition_tree,
 )
 from .theory import (
     get_scale,
     gen_progression,
-    get_available_progressions,
-    get_default_progression,
     vary_chord,
 )
 
@@ -53,7 +46,6 @@ __all__ = [
     "Composition",
     "Note",
     # Printers
-    "print_composition_tree",
     "create_style_with",
     "export_to_midi",
     "midi_to_mp3",
@@ -61,7 +53,5 @@ __all__ = [
     # Theory functions
     "get_scale",
     "gen_progression",
-    "get_available_progressions",
-    "get_default_progression",
     "vary_chord",
 ]

@@ -21,22 +21,19 @@ from .frontend import Token, TokenType
 from .styles import Style
 from .rhythms import RhythmWeight
 from .theory import (
+    gen_progression,
+    get_scale,
     Pitch,
     Progression,
-    Chord,
     ScalePitches,
-    gen_progression,
-    get_available_progressions,
-    get_scale,
     vary_chord,
 )
 from .structures import (
     Bar,
     ChordSpan,
-    Phrase,
     Composition,
-    Note,
     note_groups_to_alda,
+    Phrase,
 )
 from .motif import MotifWeight
 from .melody import gen_bar_melody, gen_bar_melody_fancy

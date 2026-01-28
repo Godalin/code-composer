@@ -29,7 +29,7 @@ def gen_bar_melody(
 
     # 创建动机生成器
     motif_gen = create_motif_generator(chord, scale_pitches, motif_type, octave)
-    
+
     # 将生成器音符与节奏、重音转换为 Note 列表
     volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
     notes: list[list[Note]] = []
@@ -38,7 +38,7 @@ def gen_bar_melody(
         acc = accents[idx] if idx < len(accents) else 0
         vel = volume_map.get(acc, 80)
         notes.append([Note(pitch=pitch, velocity=vel, duration=dur)])
-    
+
     # 补齐不足的拍子
     target = bar_target_beats
     total = sum(duration_to_beats(d) for d in durations)
@@ -73,7 +73,7 @@ def gen_bar_melody_fancy(
 
     # 将生成器音符与节奏、重音转换为 Note 列表
     volume_map = {0: 75, 1: 80, 2: 85, 3: 95}
-    
+
     if random.random() < 0.5:
         pitches : list[Pitch] = (
             [replace(p, octave=p.octave-1) for p in chord]
@@ -90,6 +90,6 @@ def gen_bar_melody_fancy(
 
     notes = []
     for dur, vol, pitch in zip(durations, accents, pitches):
-        notes.append([Note(pitch, dur, volume_map[vol])])
+        notes.append([Note(dur, pitch, volume_map[vol])])
 
     return notes
